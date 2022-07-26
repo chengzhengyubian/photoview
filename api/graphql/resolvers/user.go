@@ -2,8 +2,11 @@ package resolvers
 
 import (
 	"context"
+	"fmt"
+	openapi "github.com/alibabacloud-go/darabonba-openapi/client"
 	"os"
 	"path"
+	"rds-data-20220330/client"
 	"strconv"
 
 	api "github.com/photoview/photoview/api/graphql"
@@ -173,7 +176,36 @@ func (r *queryResolver) MyUserPreferences(ctx context.Context) (*models.UserPref
 }
 
 func (r *mutationResolver) ChangeUserPreferences(ctx context.Context, language *string) (*models.UserPreferences, error) {
-	db := r.DB(ctx)
+	//配置数据库连接
+	database := "photoview"
+	resourceArn := "acs:rds:cn-hangzhou:2304982093480287:dbInstance/rm-dingliang024"
+	secretArn := "acs:rds:cn-hangzhou:2304982093480287:rds-db-credentials/aurora-taKgr1"
+
+	var o client.ExecuteStatementRequest
+
+	o.Database = &database
+	o.ResourceArn = &resourceArn
+	o.SecretArn = &secretArn
+
+	var str string
+	str = *language
+
+	//sql执行后的返回体
+	var res *client.ExecuteStatementResponse
+	//sql执行的请求体
+	var o1 *client.ExecuteStatementRequest
+	//执行sql的客户端
+	var client client.Client
+	//客户端的配置
+	var config openapi.Config
+	//初始化客户端配置
+	config.SetAccessKeyId("ACSTQDkNtSMrZtwL")
+	config.SetAccessKeySecret("zXJ7QF79Oz")
+	config.SetEndpoint("rds-data-daily.aliyuncs.com")
+	client.Init(&config)
+	//请求体指向真实的
+	o1 = &o
+
 	user := auth.UserFromContext(ctx)
 	if user == nil {
 		return nil, auth.ErrUnauthorized
@@ -186,17 +218,43 @@ func (r *mutationResolver) ChangeUserPreferences(ctx context.Context, language *
 	}
 
 	var userPref models.UserPreferences
-	if err := db.Where("user_id = ?", user.ID).FirstOrInit(&userPref).Error; err != nil {
-		return nil, err
+	//下面是对这段逻辑的改写
+	var id string
+	id = strconv.Itoa(user.ID)
+	sql2 := "select * from user_preferences where user_id =" + id
+	//如果执行这个操作之后没有值，那么执行下面的操作，否则啥也不干
+	o1.Sql = &sql2
+	res, err := client.ExecuteStatement(o1)
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Println(res.Body.Data.Records)
+	if len(res.Body.Data.Records) == 0 {
+		//执行，插入的操作
+		sql3 := "insert into user_preferences (user_id) VALUES (" + id + ")"
+		o1.Sql = &sql3
+		//var res *client.ExecuteStatementResponse
+		client.ExecuteStatement(o1)
 	}
 
-	userPref.UserID = user.ID
+	//执行，插入的操作
+	//sql3 := "insert into user_preferences (user_id) VALUES (" + id + ")\""
+	//更新的操作
+	sql := "update user_preferences set language= " + "\"" + str + "\"" + "where user_id=" + id
+	o1.Sql = &sql
+	client.ExecuteStatement(o1)
+	o1.Sql = &sql2
+	res, err = client.ExecuteStatement(o1)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	o1.Sql = &sql2
+	res, err = client.ExecuteStatement(o1)
+
+	userPref.ID = int(*res.Body.Data.Records[0][0].LongValue)
 	userPref.Language = langTrans
-
-	if err := db.Save(&userPref).Error; err != nil {
-		return nil, err
-	}
-
+	userPref.UserID = user.ID
 	return &userPref, nil
 }
 
