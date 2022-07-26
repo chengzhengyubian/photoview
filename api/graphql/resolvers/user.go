@@ -160,18 +160,77 @@ func (r *mutationResolver) InitialSetupWizard(ctx context.Context, username stri
 }
 
 func (r *queryResolver) MyUserPreferences(ctx context.Context) (*models.UserPreferences, error) {
+	//配置数据库连接
+	database := "photoview"
+	resourceArn := "acs:rds:cn-hangzhou:2304982093480287:dbInstance/rm-dingliang024"
+	secretArn := "acs:rds:cn-hangzhou:2304982093480287:rds-db-credentials/aurora-taKgr1"
+	var o client.ExecuteStatementRequest
+
+	o.Database = &database
+	o.ResourceArn = &resourceArn
+	o.SecretArn = &secretArn
+
+	//sql执行后的返回体
+	var res *client.ExecuteStatementResponse
+	//sql执行的请求体
+	var o1 *client.ExecuteStatementRequest
+	//执行sql的客户端
+	var client client.Client
+	//客户端的配置
+	var config openapi.Config
+	//初始化客户端配置
+	config.SetAccessKeyId("ACSTQDkNtSMrZtwL")
+	config.SetAccessKeySecret("zXJ7QF79Oz")
+	config.SetEndpoint("rds-data-daily.aliyuncs.com")
+	client.Init(&config)
+	//请求体指向真实的
+	o1 = &o
+
 	user := auth.UserFromContext(ctx)
 	if user == nil {
 		return nil, auth.ErrUnauthorized
 	}
-
 	userPref := models.UserPreferences{
 		UserID: user.ID,
 	}
-	if err := r.DB(ctx).Where("user_id = ?", user.ID).FirstOrCreate(&userPref).Error; err != nil {
-		return nil, err
+	id := strconv.Itoa(user.ID)
+	//if err := r.DB(ctx).Where("user_id = ?", user.ID).FirstOrCreate(&userPref).Error; err != nil {
+	//	return nil, err
+	//}
+	sql1 := "select * from user_preferences where user_id=" + id
+	o1.Sql = &sql1
+	res, err := client.ExecuteStatement(o1)
+	if err != nil {
+		fmt.Println(err)
 	}
-
+	if len(res.Body.Data.Records) == 0 {
+		sql2 := "insert into user_preferences (user_id,language,created_at) VALUES (" + id + ",\"English\",NOW())"
+		o1.Sql = &sql2
+		client.ExecuteStatement(o1)
+		sql := "select * from user_preferences where user_id=" + id
+		o1.Sql = &sql
+		res, err := client.ExecuteStatement(o1)
+		if err != nil {
+			fmt.Println(err)
+		}
+		var language *string
+		var langTrans *models.LanguageTranslation = nil
+		language = res.Body.Data.Records[0][4].StringValue
+		lng := models.LanguageTranslation(*language)
+		langTrans = &lng
+		userPref.Language = langTrans
+		userPref.ID = int(*res.Body.Data.Records[0][0].LongValue)
+	} else {
+		var language *string
+		language = res.Body.Data.Records[0][4].StringValue
+		var langTrans *models.LanguageTranslation = nil
+		if language != nil {
+			lng := models.LanguageTranslation(*language)
+			langTrans = &lng
+		}
+		userPref.Language = langTrans
+		userPref.ID = int(*res.Body.Data.Records[0][0].LongValue)
+	}
 	return &userPref, nil
 }
 
@@ -231,7 +290,7 @@ func (r *mutationResolver) ChangeUserPreferences(ctx context.Context, language *
 	fmt.Println(res.Body.Data.Records)
 	if len(res.Body.Data.Records) == 0 {
 		//执行，插入的操作
-		sql3 := "insert into user_preferences (user_id) VALUES (" + id + ")"
+		sql3 := "insert into user_preferences (user_id,language,created_at) VALUES (" + id + ",\"English\",NOW())"
 		o1.Sql = &sql3
 		//var res *client.ExecuteStatementResponse
 		client.ExecuteStatement(o1)
@@ -240,7 +299,7 @@ func (r *mutationResolver) ChangeUserPreferences(ctx context.Context, language *
 	//执行，插入的操作
 	//sql3 := "insert into user_preferences (user_id) VALUES (" + id + ")\""
 	//更新的操作
-	sql := "update user_preferences set language= " + "\"" + str + "\"" + "where user_id=" + id
+	sql := "update user_preferences set (language,updated_at) values(\"" + str + "\",NOW()) where user_id=" + id
 	o1.Sql = &sql
 	client.ExecuteStatement(o1)
 	o1.Sql = &sql2
