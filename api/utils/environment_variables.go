@@ -25,6 +25,16 @@ const (
 	EnvUIEndpoint  EnvironmentVariable = "PHOTOVIEW_UI_ENDPOINT"
 )
 
+// dataapi related
+const (
+	AccessKeyId     EnvironmentVariable = "ACCESS_KEY_ID"
+	AccessKeySecret EnvironmentVariable = "ACCESS_KEY_SECRET"
+	Endpoint        EnvironmentVariable = "ENDPOINT"
+	Database        EnvironmentVariable = "DATABASE"
+	ResourceArn     EnvironmentVariable = "RESOURCE_ARN"
+	SecretArn       EnvironmentVariable = "SECRET_ARN"
+)
+
 // Database related
 const (
 	EnvDatabaseDriver EnvironmentVariable = "PHOTOVIEW_DATABASE_DRIVER"

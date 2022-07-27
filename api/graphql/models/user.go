@@ -133,7 +133,6 @@ func RegisterUser(username string, password *string, admin bool) (*User, error) 
 		Username: username,
 		Admin:    admin,
 	}
-
 	if password != nil {
 		hashedPassBytes, err := bcrypt.GenerateFromPassword([]byte(*password), 12)
 		if err != nil {
@@ -210,7 +209,6 @@ func (user *User) FillAlbums(db *gorm.DB) error {
 	if len(user.Albums) > 0 {
 		return nil
 	}
-
 	if err := db.Model(&user).Association("Albums").Find(&user.Albums); err != nil {
 		return errors.Wrap(err, "fill user albums")
 	}
