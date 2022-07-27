@@ -3,6 +3,9 @@ package models
 import (
 	"crypto/rand"
 	"fmt"
+	openapi "github.com/alibabacloud-go/darabonba-openapi/client"
+	"rds-data-20220330/client"
+	"strconv"
 	"time"
 
 	"github.com/pkg/errors"
@@ -99,7 +102,33 @@ func AuthorizeUser(db *gorm.DB, username string, password string) (*User, error)
 	return &user, nil
 }
 
-func RegisterUser(db *gorm.DB, username string, password *string, admin bool) (*User, error) {
+func RegisterUser(username string, password *string, admin bool) (*User, error) {
+	//配置数据库连接
+	database := "photoview"
+	resourceArn := "acs:rds:cn-hangzhou:2304982093480287:dbInstance/rm-dingliang024"
+	secretArn := "acs:rds:cn-hangzhou:2304982093480287:rds-db-credentials/aurora-taKgr1"
+
+	var o client.ExecuteStatementRequest
+
+	o.Database = &database
+	o.ResourceArn = &resourceArn
+	o.SecretArn = &secretArn
+
+	//sql执行后的返回体
+	var res *client.ExecuteStatementResponse
+	//sql执行的请求体
+	var req *client.ExecuteStatementRequest
+	//执行sql的客户端
+	var client client.Client
+	//客户端的配置
+	var config openapi.Config
+	//初始化客户端配置
+	config.SetAccessKeyId("ACSTQDkNtSMrZtwL")
+	config.SetAccessKeySecret("zXJ7QF79Oz")
+	config.SetEndpoint("rds-data-daily.aliyuncs.com")
+	client.Init(&config)
+	//请求体指向真实的
+	req = &o
 	user := User{
 		Username: username,
 		Admin:    admin,
@@ -114,16 +143,43 @@ func RegisterUser(db *gorm.DB, username string, password *string, admin bool) (*
 
 		user.Password = &hashedPass
 	}
-
-	result := db.Create(&user)
-	if result.Error != nil {
-		return nil, errors.Wrap(result.Error, "insert new user with password into database")
+	//result := db.Create(&user)
+	var ad int
+	if admin == true {
+		ad = 1
+	} else {
+		ad = 0
 	}
-
+	user.Admin = admin
+	user.Username = username
+	user.Password = password
+	var sql_users_in string
+	if password != nil {
+		sql_users_in = "insert into users (username,password,admin) values (\"" + username + "\",\"" + *password + "\"," + strconv.Itoa(ad) + ")"
+	} else {
+		sql_users_in = "insert into users (username,admin) values (\"" + username + "\"," + strconv.Itoa(ad) + ")"
+	}
+	req.Sql = &sql_users_in
+	res, err := client.ExecuteStatement(req)
+	if err != nil {
+		fmt.Println(res)
+		return nil, errors.Wrap(err, "insert new user with password into database")
+	}
+	sql_users_se := "select * from users where username=\"" + username + "\""
+	req.Sql = &sql_users_se
+	res, err = client.ExecuteStatement(req)
+	if err != nil {
+		fmt.Println(err)
+	}
+	user.ID = int(*res.Body.Data.Records[0][0].LongValue)
+	//if result.Error != nil {
+	//	return nil, errors.Wrap(result.Error, "insert new user with password into database")
+	//}
 	return &user, nil
 }
 
 func (user *User) GenerateAccessToken(db *gorm.DB) (*AccessToken, error) {
+
 	bytes := make([]byte, 24)
 	if _, err := rand.Read(bytes); err != nil {
 		return nil, errors.New(fmt.Sprintf("Could not generate token: %s\n", err.Error()))
@@ -135,18 +191,16 @@ func (user *User) GenerateAccessToken(db *gorm.DB) (*AccessToken, error) {
 
 	token_value := string(bytes)
 	expire := time.Now().Add(14 * 24 * time.Hour)
-
+	//timeStr := expire.Format("2006-01-02 15:04:05")
 	token := AccessToken{
 		UserID: user.ID,
 		Value:  token_value,
 		Expire: expire,
 	}
-
 	result := db.Create(&token)
 	if result.Error != nil {
 		return nil, errors.Wrap(result.Error, "saving access token to database")
 	}
-
 	return &token, nil
 }
 

@@ -41,10 +41,10 @@ func main() {
 		log.Panicf("Could not connect to database: %s\n", err)
 	}
 
-	// Migrate database
-	if err := database.MigrateDatabase(db); err != nil {
-		log.Panicf("Could not migrate database: %s\n", err)
-	}
+	//// Migrate database
+	//if err := database.MigrateDatabase(db); err != nil {
+	//	log.Panicf("Could not migrate database: %s\n", err)
+	//}
 
 	if err := scanner_queue.InitializeScannerQueue(db); err != nil {
 		log.Panicf("Could not initialize scanner queue: %s\n", err)
