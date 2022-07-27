@@ -29,71 +29,64 @@ func (r *Resolver) User() api.UserResolver {
 	return &userResolver{r}
 }
 
-func (r *queryResolver) User(ctx context.Context, order *models.Ordering, paginate *models.Pagination) ([]*models.User, error) {
-
-	var users []*models.User
-
-	if err := models.FormatSQL(r.DB(ctx).Model(models.User{}), order, paginate).Find(&users).Error; err != nil {
-		return nil, err
-	}
-
-	return users, nil
-}
-
 //func (r *queryResolver) User(ctx context.Context, order *models.Ordering, paginate *models.Pagination) ([]*models.User, error) {
-//	//配置数据库连接
-//	database := "photoview"
-//	resourceArn := "acs:rds:cn-hangzhou:2304982093480287:dbInstance/rm-dingliang024"
-//	secretArn := "acs:rds:cn-hangzhou:2304982093480287:rds-db-credentials/aurora-taKgr1"
-//	var o client.ExecuteStatementRequest
 //
-//	o.Database = &database
-//	o.ResourceArn = &resourceArn
-//	o.SecretArn = &secretArn
-//
-//	//sql执行后的返回体
-//	//var res *client.ExecuteStatementResponse
-//	//sql执行的请求体
-//	var o1 *client.ExecuteStatementRequest
-//	//执行sql的客户端
-//	var client client.Client
-//	//客户端的配置
-//	var config openapi.Config
-//	//初始化客户端配置
-//	config.SetAccessKeyId("ACSTQDkNtSMrZtwL")
-//	config.SetAccessKeySecret("zXJ7QF79Oz")
-//	config.SetEndpoint("rds-data-daily.aliyuncs.com")
-//	client.Init(&config)
-//	//请求体指向真实的
-//	o1 = &o
-//	sql_users_s := "select * from users"
-//	o1.Sql = &sql_users_s
-//	res, err := client.ExecuteStatement(o1)
-//	if err != nil {
-//		fmt.Println(err)
-//	}
-//	num1 := len(res.Body.Data.Records)
-//	//num2 := len(res.Body.Data.Records[0])
 //	var users []*models.User
-//	for i := 0; i < num1; i++ {
-//		var user models.User
-//		user.ID = int(*res.Body.Data.Records[i][0].LongValue)
-//		user.Password = res.Body.Data.Records[i][4].StringValue
-//		user.Username = *res.Body.Data.Records[i][3].StringValue
-//		if *res.Body.Data.Records[i][5].LongValue == 0 {
-//			user.Admin = false
-//		} else {
-//			user.Admin = true
-//		}
-//		users[i] = &user
+//
+//	if err := models.FormatSQL(r.DB(ctx).Model(models.User{}), order, paginate).Find(&users).Error; err != nil {
+//		return nil, err
 //	}
-//	//if err := models.FormatSQL(r.DB(ctx).Model(models.User{}), order, paginate).Find(&users).Error; err != nil {
-//	//	return nil, err
-//	//}
 //
 //	return users, nil
-//
 //}
+
+func (r *queryResolver) User(ctx context.Context, order *models.Ordering, paginate *models.Pagination) ([]*models.User, error) {
+	//配置数据库连接
+	database := "photoview"
+	resourceArn := "acs:rds:cn-hangzhou:2304982093480287:dbInstance/rm-dingliang024"
+	secretArn := "acs:rds:cn-hangzhou:2304982093480287:rds-db-credentials/aurora-taKgr1"
+	var o client.ExecuteStatementRequest
+
+	o.Database = &database
+	o.ResourceArn = &resourceArn
+	o.SecretArn = &secretArn
+
+	//sql执行后的返回体
+	//var res *client.ExecuteStatementResponse
+	//sql执行的请求体
+	var o1 *client.ExecuteStatementRequest
+	//执行sql的客户端
+	var client client.Client
+	//客户端的配置
+	var config openapi.Config
+	//初始化客户端配置
+	config.SetAccessKeyId("ACSTQDkNtSMrZtwL")
+	config.SetAccessKeySecret("zXJ7QF79Oz")
+	config.SetEndpoint("rds-data-daily.aliyuncs.com")
+	client.Init(&config)
+	//请求体指向真实的
+	o1 = &o
+	sql_users_se := "select * from users"
+	o1.Sql = &sql_users_se
+	res, err := client.ExecuteStatement(o1)
+	if err != nil {
+		fmt.Println(err)
+	}
+	num1 := len(res.Body.Data.Records)
+	//num2 := len(res.Body.Data.Records[0])
+	var users []*models.User
+
+	for i := 0; i < num1; i++ {
+		var user models.User
+		user.ID = int(*res.Body.Data.Records[i][0].LongValue)
+		user.Password = res.Body.Data.Records[i][4].StringValue
+		user.Username = *res.Body.Data.Records[i][3].StringValue
+		user.Admin = *res.Body.Data.Records[i][5].BooleanValue
+		//users[i] = &user
+		users = append(users, &user)
+	}
+	return users, nil
+}
 
 func (r *userResolver) Albums(ctx context.Context, user *models.User) ([]*models.Album, error) {
 	user.FillAlbums(r.DB(ctx))
@@ -407,13 +400,6 @@ func (r *mutationResolver) UpdateUser(ctx context.Context, id int, username *str
 		return nil, errors.Wrap(err, "failed to update user")
 	}
 
-	return &user, nil
-}
-
-func (r *mutationResolver) UpdateUser(ctx context.Context, id int, username *string, password *string, admin *bool) (*models.User, error) {
-
-	var user models.User
-	fmt.Println("chengbian updtae user")
 	return &user, nil
 }
 
