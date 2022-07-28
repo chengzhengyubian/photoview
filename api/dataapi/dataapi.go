@@ -60,3 +60,15 @@ func (dataApi *DataApi) ExecuteSQl(sql string) (*client.ExecuteStatementResponse
 	}
 	return req, nil
 }
+
+func (dataApi *DataApi) Query(sql string) ([][]*client.ExecuteStatementResponseBodyDataRecords, error) {
+	dataApi.resqust.Sql = &sql
+	req := &dataApi.respnose
+	req, err := dataApi.client.ExecuteStatement(dataApi.resqust)
+	if err != nil {
+		fmt.Println(err)
+		return nil, nil
+	}
+
+	return req.Body.Data.Records, nil
+}

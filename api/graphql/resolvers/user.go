@@ -6,6 +6,7 @@ import (
 	DataApi "github.com/photoview/photoview/api/dataapi"
 	_ "github.com/photoview/photoview/api/database"
 	"golang.org/x/crypto/bcrypt"
+	"log"
 	"os"
 	"path"
 	"rds-data-20220330/client"
@@ -257,21 +258,19 @@ func (r *mutationResolver) UpdateUser(ctx context.Context, id int, username *str
 	if username == nil && password == nil && admin == nil {
 		return nil, errors.New("no updates requested")
 	}
-	var user models.User
-	sql_users_se := "select * from users where id =" + strconv.Itoa(id)
+
+	sqlUsersInsert := DataApi.FormatSql("select * from users where id =%v", id)
 	dataApi, _ := DataApi.NewDataApiClient()
-	res, err := dataApi.ExecuteSQl(sql_users_se)
+	res, err := dataApi.Query(sqlUsersInsert)
+	log.Print("insert user result: ", res)
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println(res.Body.Data.Records[0][3].StringValue)
-	//user.Username = *res.Body.Data.Records[0][3].StringValue
-	fmt.Println(user.Username)
-	user.Password = res.Body.Data.Records[0][4].StringValue
-	user.Admin = *res.Body.Data.Records[0][5].BooleanValue
-	if username != nil {
-		user.Username = *username
-	}
+
+	var user models.User
+	user.Username = DataApi.GetString(res, 0, 3)
+	user.Password = DataApi.GetStringP(res, 0, 4)
+	user.Admin = DataApi.GetBoolean(res, 0, 5)
 	if password != nil {
 		hashedPassBytes, err := bcrypt.GenerateFromPassword([]byte(*password), 12)
 		if err != nil {
@@ -281,18 +280,38 @@ func (r *mutationResolver) UpdateUser(ctx context.Context, id int, username *str
 
 		user.Password = &hashedPass
 	}
-	var ad int
+
+	if username != nil {
+		user.Username = *username
+	}
+
+	ad := 0
 	if admin != nil {
 		user.Admin = *admin
+		if user.Admin {
+			ad = 1
+		}
 	}
-	if user.Admin == true {
-		ad = 1
-	} else {
-		ad = 0
+
+	updateData := make(map[string]any)
+	if username != nil {
+		updateData["username"] = username
 	}
-	sql_users_up := "update users set username=\"" + user.Username + "\",password=\"" + *user.Password + "\",admin=" + strconv.Itoa(ad) + " where id=" + strconv.Itoa(id)
-	res, err = dataApi.ExecuteSQl(sql_users_up)
-	fmt.Println(res)
+	if password != nil {
+		updateData["password"] = user.Password
+	}
+	updateData["admin"] = ad
+
+	updateWhere := make(map[string]any)
+	updateWhere["id"] = id
+
+	sqlUsersUpdate, err := DataApi.FormatUpdateSql("users", updateData, updateWhere)
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = dataApi.ExecuteSQl(sqlUsersUpdate)
+	log.Print("update user result: ", res)
 	if err != nil {
 		return nil, err
 	}
