@@ -11,7 +11,6 @@ import (
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
-	"gorm.io/gorm/clause"
 )
 
 type User struct {
@@ -244,22 +243,77 @@ func (user *User) OwnsAlbum(db *gorm.DB, album *Album) (bool, error) {
 	return len(ownedParents) > 0, nil
 }
 
-// FavoriteMedia sets/clears a media as favorite for the user
+// FavoriteMedia sets/clears a media as favorite for the user//修改完
 func (user *User) FavoriteMedia(db *gorm.DB, mediaID int, favorite bool) (*Media, error) {
-	userMediaData := UserMediaData{
-		UserID:   user.ID,
-		MediaID:  mediaID,
-		Favorite: favorite,
+	var fav int
+	if favorite == true {
+		fav = 1
+	} else {
+		fav = 0
 	}
-	//INSERT INTO `user_media_data` (`created_at`,`updated_at`,`user_id`,`media_id`,`favorite`) VALUES ('2022-07-28 00:31:57.714','2022-07-28 00:31:57.714',2,1,true) ON DUPLICATE KEY UPDATE `updated_at`='2022-07-28 00:31:57.714',`favorite`=VALUES(`favorite`)
-	if err := db.Clauses(clause.OnConflict{UpdateAll: true}).Create(&userMediaData).Error; err != nil {
-		return nil, errors.Wrapf(err, "update user favorite media in database")
+	sql_user_media_data_se := "select * from user_media_data where user_id =" + strconv.Itoa(user.ID)
+	sql_user_media_data_in := "INSERT INTO `user_media_data` (`created_at`,`updated_at`,`user_id`,`media_id`,`favorite`) VALUES (NOW(),NOW()," + strconv.Itoa(user.ID) + "," + strconv.Itoa(mediaID) + "," + strconv.Itoa(fav) + ")"
+	sql_user_media_data_up := "UPDATE user_media_data set updated_at=NOW(),favorite=\"" + strconv.Itoa(fav) + "\"where user_id =\"" + strconv.Itoa(user.ID) + "\"and media_id =" + strconv.Itoa(mediaID)
+	dataApi, _ := DataApi.NewDataApiClient()
+	res, err := dataApi.ExecuteSQl(sql_user_media_data_se)
+	if len(res.Body.Data.Records) == 0 {
+		res, err = dataApi.ExecuteSQl(sql_user_media_data_in)
+		fmt.Println(res)
+		if err != nil {
+			fmt.Println(err)
+		}
+	} else {
+		res, err = dataApi.ExecuteSQl(sql_user_media_data_up)
+		fmt.Println(res)
+		if err != nil {
+			fmt.Println(err)
+		}
 	}
-	//SELECT * FROM `media` WHERE `media`.`id` = 1 ORDER BY `media`.`id` LIMIT 1
 	var media Media
-	if err := db.First(&media, mediaID).Error; err != nil {
-		return nil, errors.Wrap(err, "get media from database after favorite update")
+	sql_media_se := "SELECT * FROM `media` WHERE `media`.`id` = " + strconv.Itoa(mediaID) //+ " ORDER BY `" + strconv.Itoa(mediaID) + "` LIMIT 1"
+	res, err = dataApi.ExecuteSQl(sql_media_se)
+	if err != nil {
+		fmt.Println(nil)
 	}
-
+	fmt.Println(res)
+	media.CreatedAt = time.Unix(*res.Body.Data.Records[0][1].LongValue/1000, 0)
+	media.UpdatedAt = time.Unix(*res.Body.Data.Records[0][2].LongValue/1000, 0)
+	media.Title = *res.Body.Data.Records[0][3].StringValue
+	media.Path = *res.Body.Data.Records[0][4].StringValue
+	media.PathHash = *res.Body.Data.Records[0][5].StringValue
+	media.AlbumID = int(*res.Body.Data.Records[0][6].LongValue)
+	if res.Body.Data.Records[0][7].IsNull != nil {
+		media.ExifID = nil
+	} else {
+		id := int(*res.Body.Data.Records[0][7].LongValue)
+		media.ExifID = &id
+	}
+	media.DateShot = time.Unix(*res.Body.Data.Records[0][8].LongValue/1000, 0)
+	if *res.Body.Data.Records[0][9].StringValue == "photo" {
+		media.Type = MediaTypePhoto
+	} else {
+		media.Type = MediaTypeVideo
+	}
+	if res.Body.Data.Records[0][10].IsNull != nil {
+		media.VideoMetadataID = nil
+	} else {
+		id := int(*res.Body.Data.Records[0][10].LongValue)
+		media.VideoMetadataID = &id
+	}
+	if res.Body.Data.Records[0][11].IsNull != nil {
+		media.SideCarPath = nil
+	} else {
+		media.SideCarPath = res.Body.Data.Records[0][12].StringValue
+	}
+	if res.Body.Data.Records[0][12].IsNull != nil {
+		media.SideCarHash = nil
+	} else {
+		media.SideCarHash = res.Body.Data.Records[0][12].StringValue
+	}
+	if res.Body.Data.Records[0][13].IsNull != nil {
+		media.Blurhash = nil
+	} else {
+		media.Blurhash = res.Body.Data.Records[0][13].StringValue
+	}
 	return &media, nil
 }
