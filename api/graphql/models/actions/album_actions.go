@@ -61,7 +61,7 @@ func MyAlbums(db *gorm.DB, user *models.User, order *models.Ordering, paginate *
 	query = models.FormatSQL(query, order, paginate)
 
 	var albums []*models.Album
-	if err := query.Find(&albums).Error; err != nil {
+	if err := query.Find(&albums).Error; err != nil { //SELECT * FROM `albums` WHERE id IN (1) AND parent_album_id IS NULL ORDER BY `title`
 		return nil, err
 	}
 
@@ -70,7 +70,7 @@ func MyAlbums(db *gorm.DB, user *models.User, order *models.Ordering, paginate *
 
 func Album(db *gorm.DB, user *models.User, id int) (*models.Album, error) {
 	var album models.Album
-	if err := db.First(&album, id).Error; err != nil {
+	if err := db.First(&album, id).Error; err != nil { //SELECT * FROM `albums` WHERE `albums`.`id` = 1 ORDER BY `albums`.`id` LIMIT 1
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, errors.New("album not found")
 		}
@@ -100,6 +100,13 @@ func AlbumPath(db *gorm.DB, user *models.User, album *models.Album) ([]*models.A
 		)
 		SELECT * FROM path_albums WHERE id != ?
 	`, album.ID, album.ID).Scan(&album_path).Error
+	/* WITH recursive path_albums AS (
+	           SELECT * FROM albums anchor WHERE anchor.id = 1
+	           UNION
+	           SELECT parent.* FROM path_albums child JOIN albums parent ON parent.id = child.parent_album_id
+	   )
+	   SELECT * FROM path_albums WHERE id != 1
+	*/
 
 	// Make sure to only return albums this user owns
 	for i := len(album_path) - 1; i >= 0; i-- {

@@ -53,7 +53,7 @@ func getSamplesFromDatabase(db *gorm.DB) (samples []face.Descriptor, faceGroupID
 
 	var imageFaces []*models.ImageFace
 
-	if err = db.Find(&imageFaces).Error; err != nil {
+	if err = db.Find(&imageFaces).Error; err != nil { //SELECT * FROM `image_faces`
 		return
 	}
 
@@ -226,7 +226,7 @@ func (fd *FaceDetector) RecognizeUnlabeledFaces(tx *gorm.DB, user *models.User) 
 		Where("media.album_id IN (?)",
 			tx.Select("album_id").Table("user_albums").Where("user_id = ?", user.ID),
 		).
-		Find(&unlabeledFaceGroups).Error
+		Find(&unlabeledFaceGroups).Error // SELECT `face_groups`.`id`,`face_groups`.`created_at`,`face_groups`.`updated_at`,`face_groups`.`label` FROM `face_groups` JOIN image_faces ON image_faces.face_group_id = face_groups.id JOIN media ON image_faces.media_id = media.id WHERE face_groups.label IS NULL AND media.album_id IN (SELECT album_id FROM `user_albums` WHERE user_id = 2)
 
 	if err != nil {
 		return nil, err

@@ -22,7 +22,8 @@ var mainPeriodicScanner *periodicScanner = nil
 func getPeriodicScanInterval(db *gorm.DB) (time.Duration, error) {
 
 	var siteInfo models.SiteInfo
-	if err := db.First(&siteInfo).Error; err != nil {
+	if err := db.First(&siteInfo).Error; err != nil { //SELECT * FROM `site_info` ORDER BY `site_info`.`initial_setup` LIMIT 1
+
 		return 0, err
 	}
 

@@ -9,6 +9,8 @@ photoview.db-journal
 
 .env
 testing.env
+api/.env
+ui/.env
 
 # docker
 docker-compose.yml

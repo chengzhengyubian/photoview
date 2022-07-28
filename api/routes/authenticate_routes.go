@@ -16,7 +16,7 @@ func authenticateMedia(media *models.Media, db *gorm.DB, r *http.Request) (succe
 
 	if user != nil {
 		var album models.Album
-		if err := db.First(&album, media.AlbumID).Error; err != nil {
+		if err := db.First(&album, media.AlbumID).Error; err != nil { //SELECT * FROM `albums` WHERE `albums`.`id` = 1 ORDER BY `albums`.`id` LIMIT 1
 			return false, "internal server error", http.StatusInternalServerError, err
 		}
 

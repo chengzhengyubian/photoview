@@ -19,7 +19,6 @@ func NewUserFavoriteLoader(db *gorm.DB) *UserFavoritesLoader {
 				userIDMap[key.UserID] = struct{}{}
 				mediaIDMap[key.MediaID] = struct{}{}
 			}
-			
 
 			uniqueUserIDs := make([]int, len(userIDMap))
 			uniqueMediaIDs := make([]int, len(mediaIDMap))
@@ -35,7 +34,7 @@ func NewUserFavoriteLoader(db *gorm.DB) *UserFavoritesLoader {
 				uniqueMediaIDs[count] = id
 				count++
 			}
-
+			// SELECT * FROM `user_media_data` WHERE user_id IN (2) AND media_id IN (1) AND favorite = TRUE
 			var userMediaFavorites []*models.UserMediaData
 			err := db.Where("user_id IN (?)", uniqueUserIDs).Where("media_id IN (?)", uniqueMediaIDs).Where("favorite = TRUE").Find(&userMediaFavorites).Error
 			if err != nil {

@@ -37,7 +37,7 @@ func NewRootAlbum(db *gorm.DB, rootPath string, owner *models.User) (*models.Alb
 	}
 
 	var matchedAlbums []models.Album
-	if err := db.Where("path_hash = ?", models.MD5Hash(rootPath)).Find(&matchedAlbums).Error; err != nil {
+	if err := db.Where("path_hash = ?", models.MD5Hash(rootPath)).Find(&matchedAlbums).Error; err != nil { //SELECT * FROM `albums` WHERE path_hash = '1f7d46bead15a13c555e549e19624753'
 		return nil, err
 	}
 
@@ -45,7 +45,7 @@ func NewRootAlbum(db *gorm.DB, rootPath string, owner *models.User) (*models.Alb
 		album := matchedAlbums[0]
 
 		var matchedUserAlbumCount int64
-		if err := db.Table("user_albums").Where("user_id = ?", owner.ID).Where("album_id = ?", album.ID).Count(&matchedUserAlbumCount).Error; err != nil {
+		if err := db.Table("user_albums").Where("user_id = ?", owner.ID).Where("album_id = ?", album.ID).Count(&matchedUserAlbumCount).Error; err != nil { //SELECT count(*) FROM `user_albums` WHERE user_id = 13 AND album_id = 108
 			return nil, err
 		}
 
@@ -53,7 +53,7 @@ func NewRootAlbum(db *gorm.DB, rootPath string, owner *models.User) (*models.Alb
 			return nil, errors.New(fmt.Sprintf("user already owns a path containing this path: %s", rootPath))
 		}
 
-		if err := db.Model(&owner).Association("Albums").Append(&album); err != nil {
+		if err := db.Model(&owner).Association("Albums").Append(&album); err != nil { // INSERT INTO `albums` (`created_at`,`updated_at`,`title`,`parent_album_id`,`path`,`path_hash`,`cover_id`,`id`) VALUES ('2022-07-27 03:19:43.834','2022-07-27 03:19:43.834','chengbian',NULL,'/Users/chengbian','1f7d46bead15a13c555e549e19624753',NULL,108) ON DUPLICATE KEY UPDATE `id`=`id`            UPDATE `users` SET `updated_at`='2022-07-28 10:07:37.749' WHERE `id` = 13
 			return nil, errors.Wrap(err, "add owner to already existing album")
 		}
 

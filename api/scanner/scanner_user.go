@@ -54,7 +54,7 @@ func FindAlbumsForUser(db *gorm.DB, user *models.User, album_cache *scanner_cach
 		userAlbumIDs[i] = album.ID
 	}
 
-	var userRootAlbums []*models.Album
+	var userRootAlbums []*models.Album //SELECT * FROM `albums` WHERE id IN (1) AND (parent_album_id IS NULL OR parent_album_id NOT IN (1))
 	if err := db.Where("id IN (?)", userAlbumIDs).Where("parent_album_id IS NULL OR parent_album_id NOT IN (?)", userAlbumIDs).Find(&userRootAlbums).Error; err != nil {
 		return nil, []error{err}
 	}

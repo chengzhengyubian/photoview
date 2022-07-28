@@ -209,7 +209,7 @@ func (queue *ScannerQueue) notify() bool {
 func AddAllToQueue() error {
 
 	var users []*models.User
-	result := global_scanner_queue.db.Find(&users)
+	result := global_scanner_queue.db.Find(&users) //SELECT * FROM `users`
 	if result.Error != nil {
 		return errors.Wrap(result.Error, "get all users from database")
 	}

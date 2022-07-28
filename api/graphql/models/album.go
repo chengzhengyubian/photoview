@@ -76,6 +76,13 @@ func GetParentsFromAlbums(db *gorm.DB, filter func(*gorm.DB) *gorm.DB, albumID i
 
 	?
 	`, albumID, query).Find(&parents).Error
+	/*WITH recursive super_albums AS (
+	          SELECT * FROM albums AS leaf WHERE id = 1
+	          UNION ALL
+	          SELECT parent.* from albums AS parent JOIN super_albums ON parent.id = super_albums.parent_album_id
+	  )
+
+	  SELECT * FROM `super_albums` WHERE id IN (1)*/
 
 	return parents, err
 }
@@ -99,6 +106,18 @@ func (a *Album) Thumbnail(db *gorm.DB) (*Media, error) {
 		`, a.ID).Find(&media).Error; err != nil {
 			return nil, err
 		}
+		/* WITH recursive sub_albums AS (
+		           SELECT * FROM albums AS root WHERE id = 1
+		           UNION ALL
+		           SELECT child.* FROM albums AS child JOIN sub_albums ON child.parent_album_id = sub_albums.id
+		   )
+
+		   SELECT * FROM media WHERE media.album_id IN (
+		           SELECT id FROM sub_albums
+		   ) AND media.id IN (
+		           SELECT media_id FROM media_urls WHERE media_urls.media_id = media.id
+		   ) ORDER BY id LIMIT 1
+		*/
 	} else {
 		if err := db.Where("id = ?", a.CoverID).Find(&media).Error; err != nil {
 			return nil, err

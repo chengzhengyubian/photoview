@@ -97,7 +97,7 @@ func (r *mediaResolver) Type(ctx context.Context, media *models.Media) (models.M
 
 func (r *mediaResolver) Album(ctx context.Context, obj *models.Media) (*models.Album, error) {
 	var album models.Album
-	err := r.DB(ctx).Find(&album, obj.AlbumID).Error
+	err := r.DB(ctx).Find(&album, obj.AlbumID).Error // SELECT * FROM `albums` WHERE `albums`.`id` = 1
 	if err != nil {
 		return nil, err
 	}

@@ -29,7 +29,7 @@ func (r *mutationResolver) ScanAll(ctx context.Context) (*models.ScannerResult, 
 
 func (r *mutationResolver) ScanUser(ctx context.Context, userID int) (*models.ScannerResult, error) {
 	var user models.User
-	if err := r.DB(ctx).First(&user, userID).Error; err != nil {
+	if err := r.DB(ctx).First(&user, userID).Error; err != nil { //SELECT * FROM `users` WHERE `users`.`id` = 2 ORDER BY `users`.`id` LIMIT 1
 		return nil, errors.Wrap(err, "get user from database")
 	}
 

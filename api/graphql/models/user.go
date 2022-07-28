@@ -3,7 +3,7 @@ package models
 import (
 	"crypto/rand"
 	"fmt"
-	openapi "github.com/alibabacloud-go/darabonba-openapi/client"
+	DataApi "github.com/photoview/photoview/api/dataapi"
 	"rds-data-20220330/client"
 	"strconv"
 	"time"
@@ -76,17 +76,19 @@ func (u *UserPreferences) BeforeSave(tx *gorm.DB) error {
 
 var ErrorInvalidUserCredentials = errors.New("invalid credentials")
 
+//修改后
 func AuthorizeUser(db *gorm.DB, username string, password string) (*User, error) {
 	var user User
 
-	result := db.Where("username = ?", username).First(&user)
-	if result.Error != nil {
-		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-			return nil, ErrorInvalidUserCredentials
-		}
-		return nil, errors.Wrap(result.Error, "failed to get user by username when authorizing")
+	//result := db.Where("username = ?", username).First(&user)
+	sql_users_se := "select * from users where username=\"" + username + "\""
+	dataApi, _ := DataApi.NewDataApiClient()
+	res, err := dataApi.ExecuteSQl(sql_users_se)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get user by username when authorizing")
 	}
-
+	user.ID = int(*res.Body.Data.Records[0][0].LongValue)
+	user.Password = res.Body.Data.Records[0][4].StringValue
 	if user.Password == nil {
 		return nil, errors.New("user does not have a password")
 	}
@@ -102,33 +104,10 @@ func AuthorizeUser(db *gorm.DB, username string, password string) (*User, error)
 	return &user, nil
 }
 
+//修改后
 func RegisterUser(username string, password *string, admin bool) (*User, error) {
-	//配置数据库连接
-	database := "photoview"
-	resourceArn := "acs:rds:cn-hangzhou:2304982093480287:dbInstance/rm-dingliang024"
-	secretArn := "acs:rds:cn-hangzhou:2304982093480287:rds-db-credentials/aurora-taKgr1"
-
-	var o client.ExecuteStatementRequest
-
-	o.Database = &database
-	o.ResourceArn = &resourceArn
-	o.SecretArn = &secretArn
-
 	//sql执行后的返回体
 	var res *client.ExecuteStatementResponse
-	//sql执行的请求体
-	var req *client.ExecuteStatementRequest
-	//执行sql的客户端
-	var client client.Client
-	//客户端的配置
-	var config openapi.Config
-	//初始化客户端配置
-	config.SetAccessKeyId("ACSTQDkNtSMrZtwL")
-	config.SetAccessKeySecret("zXJ7QF79Oz")
-	config.SetEndpoint("rds-data-daily.aliyuncs.com")
-	client.Init(&config)
-	//请求体指向真实的
-	req = &o
 	user := User{
 		Username: username,
 		Admin:    admin,
@@ -142,7 +121,6 @@ func RegisterUser(username string, password *string, admin bool) (*User, error) 
 
 		user.Password = &hashedPass
 	}
-	//result := db.Create(&user)
 	var ad int
 	if admin == true {
 		ad = 1
@@ -158,25 +136,22 @@ func RegisterUser(username string, password *string, admin bool) (*User, error) 
 	} else {
 		sql_users_in = "insert into users (username,admin) values (\"" + username + "\"," + strconv.Itoa(ad) + ")"
 	}
-	req.Sql = &sql_users_in
-	res, err := client.ExecuteStatement(req)
+	dataApi, _ := DataApi.NewDataApiClient()
+	res, err := dataApi.ExecuteSQl(sql_users_in)
 	if err != nil {
 		fmt.Println(res)
 		return nil, errors.Wrap(err, "insert new user with password into database")
 	}
 	sql_users_se := "select * from users where username=\"" + username + "\""
-	req.Sql = &sql_users_se
-	res, err = client.ExecuteStatement(req)
+	res, err = dataApi.ExecuteSQl(sql_users_se)
 	if err != nil {
 		fmt.Println(err)
 	}
 	user.ID = int(*res.Body.Data.Records[0][0].LongValue)
-	//if result.Error != nil {
-	//	return nil, errors.Wrap(result.Error, "insert new user with password into database")
-	//}
 	return &user, nil
 }
 
+//更改完
 func (user *User) GenerateAccessToken(db *gorm.DB) (*AccessToken, error) {
 
 	bytes := make([]byte, 24)
@@ -190,29 +165,59 @@ func (user *User) GenerateAccessToken(db *gorm.DB) (*AccessToken, error) {
 
 	token_value := string(bytes)
 	expire := time.Now().Add(14 * 24 * time.Hour)
-	//timeStr := expire.Format("2006-01-02 15:04:05")
+	timeStr := expire.Format("2006-01-02 15:04:05")
 	token := AccessToken{
 		UserID: user.ID,
 		Value:  token_value,
 		Expire: expire,
 	}
-	result := db.Create(&token)
-	if result.Error != nil {
-		return nil, errors.Wrap(result.Error, "saving access token to database")
+	//result := db.Debug().Create(&token) //INSERT INTO `access_tokens` (`created_at`,`updated_at`,`user_id`,`value`,`expire`) VALUES ('2022-07-28 11:00:10.268','2022-07-28 11:00:10.268',2,'s4vXN6n7Vyh2ZYN6nT1vCqic','2022-08-11 11:00:10.267')
+	sql_access_tokens_in := "insert into access_tokens(created_at,updated_at,user_id,value,expire) values(NOW(),NOW()," + strconv.Itoa(user.ID) + ",'" + token_value + "','" + timeStr + "')"
+	dataApi, _ := DataApi.NewDataApiClient()
+	res, err := dataApi.ExecuteSQl(sql_access_tokens_in)
+	fmt.Println(res)
+	if err != nil {
+		return nil, errors.Wrap(err, "saving access token to database")
 	}
 	return &token, nil
 }
 
-// FillAlbums fill user.Albums with albums from database
+// FillAlbums fill user.Albums with albums from database 修改完
 func (user *User) FillAlbums(db *gorm.DB) error {
 	// Albums already present
 	if len(user.Albums) > 0 {
 		return nil
 	}
-	if err := db.Model(&user).Association("Albums").Find(&user.Albums); err != nil {
-		return errors.Wrap(err, "fill user albums")
+	sql_users_albums_se := "SELECT `albums`.`id`,`albums`.`created_at`,`albums`.`updated_at`,`albums`.`title`,`albums`.`parent_album_id`,`albums`.`path`,`albums`.`path_hash`,`albums`.`cover_id` FROM `albums` JOIN `user_albums` ON `user_albums`.`album_id` = `albums`.`id` AND `user_albums`.`user_id` =  " + strconv.Itoa(user.ID)
+	dataApi, _ := DataApi.NewDataApiClient()
+	res, err := dataApi.ExecuteSQl(sql_users_albums_se)
+	fmt.Println(res)
+	num := len(res.Body.Data.Records)
+	for i := 0; i < num; i++ {
+		var album Album
+		album.ID = int(*res.Body.Data.Records[i][0].LongValue)
+		album.CreatedAt = time.Unix(*res.Body.Data.Records[i][1].LongValue/1000, 0)
+		album.UpdatedAt = time.Unix(*res.Body.Data.Records[i][2].LongValue/1000, 0)
+		album.Title = *res.Body.Data.Records[i][3].StringValue
+		if res.Body.Data.Records[i][4].IsNull != nil {
+			album.ParentAlbumID = nil
+		} else {
+			id := int(*res.Body.Data.Records[i][4].LongValue)
+			album.ParentAlbumID = &id
+		}
+		album.Path = *res.Body.Data.Records[i][5].StringValue
+		album.PathHash = *res.Body.Data.Records[i][6].StringValue
+		if res.Body.Data.Records[i][7].IsNull != nil {
+			album.CoverID = nil
+		} else {
+			id := int(*res.Body.Data.Records[i][7].LongValue)
+			album.CoverID = &id
+		}
+		user.Albums = append(user.Albums, album)
 	}
-
+	if err != nil {
+		fmt.Println(err)
+	}
 	return nil
 }
 
@@ -246,11 +251,11 @@ func (user *User) FavoriteMedia(db *gorm.DB, mediaID int, favorite bool) (*Media
 		MediaID:  mediaID,
 		Favorite: favorite,
 	}
-
+	//INSERT INTO `user_media_data` (`created_at`,`updated_at`,`user_id`,`media_id`,`favorite`) VALUES ('2022-07-28 00:31:57.714','2022-07-28 00:31:57.714',2,1,true) ON DUPLICATE KEY UPDATE `updated_at`='2022-07-28 00:31:57.714',`favorite`=VALUES(`favorite`)
 	if err := db.Clauses(clause.OnConflict{UpdateAll: true}).Create(&userMediaData).Error; err != nil {
 		return nil, errors.Wrapf(err, "update user favorite media in database")
 	}
-
+	//SELECT * FROM `media` WHERE `media`.`id` = 1 ORDER BY `media`.`id` LIMIT 1
 	var media Media
 	if err := db.First(&media, mediaID).Error; err != nil {
 		return nil, errors.Wrap(err, "get media from database after favorite update")

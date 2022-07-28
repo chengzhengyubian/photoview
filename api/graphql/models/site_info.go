@@ -34,7 +34,8 @@ func GetSiteInfo(db *gorm.DB) (*SiteInfo, error) {
 
 	var siteInfo []*SiteInfo
 
-	if err := db.Limit(1).Find(&siteInfo).Error; err != nil {
+	if err := db.Limit(1).Find(&siteInfo).Error; err != nil { //SELECT * FROM `site_info` LIMIT 1
+
 		return nil, errors.Wrap(err, "get site info from database")
 	}
 

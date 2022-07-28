@@ -75,7 +75,8 @@ func ProcessSingleMedia(db *gorm.DB, media *models.Media) error {
 	album_cache := scanner_cache.MakeAlbumCache()
 
 	var album models.Album
-	if err := db.Model(media).Association("Album").Find(&album); err != nil {
+	if err := db.Model(media).Association("Album").Find(&album); err != nil { //SELECT * FROM `albums` WHERE `albums`.`id` = 1
+
 		return err
 	}
 

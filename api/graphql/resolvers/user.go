@@ -3,7 +3,6 @@ package resolvers
 import (
 	"context"
 	"fmt"
-	openapi "github.com/alibabacloud-go/darabonba-openapi/client"
 	DataApi "github.com/photoview/photoview/api/dataapi"
 	_ "github.com/photoview/photoview/api/database"
 	"golang.org/x/crypto/bcrypt"
@@ -31,60 +30,21 @@ func (r *Resolver) User() api.UserResolver {
 	return &userResolver{r}
 }
 
-//func (r *queryResolver) User(ctx context.Context, order *models.Ordering, paginate *models.Pagination) ([]*models.User, error) {
-//
-//	var users []*models.User
-//
-//	if err := models.FormatSQL(r.DB(ctx).Model(models.User{}), order, paginate).Find(&users).Error; err != nil {
-//		return nil, err
-//	}
-//
-//	return users, nil
-//}
-
 func (r *queryResolver) User(ctx context.Context, order *models.Ordering, paginate *models.Pagination) ([]*models.User, error) {
-	//配置数据库连接
-	database := "photoview"
-	resourceArn := "acs:rds:cn-hangzhou:2304982093480287:dbInstance/rm-dingliang024"
-	secretArn := "acs:rds:cn-hangzhou:2304982093480287:rds-db-credentials/aurora-taKgr1"
-	var o client.ExecuteStatementRequest
-
-	o.Database = &database
-	o.ResourceArn = &resourceArn
-	o.SecretArn = &secretArn
-
-	//sql执行后的返回体
-	//var res *client.ExecuteStatementResponse
-	//sql执行的请求体
-	var o1 *client.ExecuteStatementRequest
-	//执行sql的客户端
-	var client client.Client
-	//客户端的配置
-	var config openapi.Config
-	//初始化客户端配置
-	config.SetAccessKeyId("ACSTQDkNtSMrZtwL")
-	config.SetAccessKeySecret("zXJ7QF79Oz")
-	config.SetEndpoint("rds-data-daily.aliyuncs.com")
-	client.Init(&config)
-	//请求体指向真实的
-	o1 = &o
 	sql_users_se := "select * from users"
-	o1.Sql = &sql_users_se
-	res, err := client.ExecuteStatement(o1)
+	dataApi, _ := DataApi.NewDataApiClient()
+	res, err := dataApi.ExecuteSQl(sql_users_se)
 	if err != nil {
 		fmt.Println(err)
 	}
 	num1 := len(res.Body.Data.Records)
-	//num2 := len(res.Body.Data.Records[0])
 	var users []*models.User
-
 	for i := 0; i < num1; i++ {
 		var user models.User
 		user.ID = int(*res.Body.Data.Records[i][0].LongValue)
 		user.Password = res.Body.Data.Records[i][4].StringValue
 		user.Username = *res.Body.Data.Records[i][3].StringValue
 		user.Admin = *res.Body.Data.Records[i][5].BooleanValue
-		//users[i] = &user
 		users = append(users, &user)
 	}
 	return users, nil
@@ -97,20 +57,19 @@ func (r *userResolver) Albums(ctx context.Context, user *models.User) ([]*models
 	for i, album := range user.Albums {
 		pointerAlbums[i] = &album
 	}
-
 	return pointerAlbums, nil
 }
 
 func (r *userResolver) RootAlbums(ctx context.Context, user *models.User) (albums []*models.Album, err error) {
 	db := r.DB(ctx)
-
+	//SELECT `albums`.`id`,`albums`.`created_at`,`albums`.`updated_at`,`albums`.`title`,`albums`.`parent_album_id`,`albums`.`path`,`albums`.`path_hash`,`albums`.`cover_id` FROM `albums` JOIN `user_albums` ON `user_albums`.`album_id` = `albums`.`id` AND `user_albums`.`user_id` = 12 WHERE albums.parent_album_id NOT IN (SELECT albums.id FROM `user_albums` JOIN albums ON albums.id = user_albums.album_id AND user_albums.user_id = 12) OR albums.parent_album_id IS NULL
 	err = db.Model(&user).
 		Where("albums.parent_album_id NOT IN (?)",
 			db.Table("user_albums").
 				Select("albums.id").
 				Joins("JOIN albums ON albums.id = user_albums.album_id AND user_albums.user_id = ?", user.ID),
 		).Or("albums.parent_album_id IS NULL").
-		Association("Albums").Find(&albums)
+		Association("Albums").Find(&albums) //SELECT `albums`.`id`,`albums`.`created_at`,`albums`.`updated_at`,`albums`.`title`,`albums`.`parent_album_id`,`albums`.`path`,`albums`.`path_hash`,`albums`.`cover_id` FROM `albums` JOIN `user_albums` ON `user_albums`.`album_id` = `albums`.`id` AND `user_albums`.`user_id` = 5 WHERE albums.parent_album_id NOT IN (SELECT albums.id FROM `user_albums` JOIN albums ON albums.id = user_albums.album_id AND user_albums.user_id = 5) OR albums.parent_album_id IS NULL
 
 	return
 }
@@ -210,34 +169,8 @@ func (r *mutationResolver) InitialSetupWizard(ctx context.Context, username stri
 }
 
 func (r *queryResolver) MyUserPreferences(ctx context.Context) (*models.UserPreferences, error) {
-
-	//配置数据库连接
-	database := "photoview"
-	resourceArn := "acs:rds:cn-hangzhou:2304982093480287:dbInstance/rm-dingliang024"
-	secretArn := "acs:rds:cn-hangzhou:2304982093480287:rds-db-credentials/aurora-taKgr1"
-	var o client.ExecuteStatementRequest
-
-	o.Database = &database
-	o.ResourceArn = &resourceArn
-	o.SecretArn = &secretArn
-
-	//sql执行后的返回体
+	dataApi, _ := DataApi.NewDataApiClient()
 	var res *client.ExecuteStatementResponse
-
-	//sql执行的请求体
-	var o1 *client.ExecuteStatementRequest
-	//执行sql的客户端
-	var client client.Client
-	//客户端的配置
-	var config openapi.Config
-	//初始化客户端配置
-	config.SetAccessKeyId("ACSTQDkNtSMrZtwL")
-	config.SetAccessKeySecret("zXJ7QF79Oz")
-	config.SetEndpoint("rds-data-daily.aliyuncs.com")
-	client.Init(&config)
-	//请求体指向真实的
-	o1 = &o
-
 	user := auth.UserFromContext(ctx)
 	if user == nil {
 		return nil, auth.ErrUnauthorized
@@ -246,22 +179,16 @@ func (r *queryResolver) MyUserPreferences(ctx context.Context) (*models.UserPref
 		UserID: user.ID,
 	}
 	id := strconv.Itoa(user.ID)
-	//if err := r.DB(ctx).Where("user_id = ?", user.ID).FirstOrCreate(&userPref).Error; err != nil {
-	//	return nil, err
-	//}
 	sql1 := "select * from user_preferences where user_id=" + id
-	o1.Sql = &sql1
-	res, err := client.ExecuteStatement(o1)
+	res, err := dataApi.ExecuteSQl(sql1)
 	if err != nil {
 		fmt.Println(err)
 	}
 	if len(res.Body.Data.Records) == 0 {
 		sql2 := "insert into user_preferences (user_id,language,created_at) VALUES (" + id + ",\"English\",NOW())"
-		o1.Sql = &sql2
-		client.ExecuteStatement(o1)
+		dataApi.ExecuteSQl(sql2)
 		sql := "select * from user_preferences where user_id=" + id
-		o1.Sql = &sql
-		res, err := client.ExecuteStatement(o1)
+		res, err := dataApi.ExecuteSQl(sql)
 		if err != nil {
 			fmt.Println(err)
 		}
@@ -325,23 +252,26 @@ func (r *mutationResolver) ChangeUserPreferences(ctx context.Context, language *
 	return &userPref, nil
 }
 
-//Admin queries
+//更改了更新用户的操作
 func (r *mutationResolver) UpdateUser(ctx context.Context, id int, username *string, password *string, admin *bool) (*models.User, error) {
-	db := r.DB(ctx)
-
 	if username == nil && password == nil && admin == nil {
 		return nil, errors.New("no updates requested")
 	}
-
 	var user models.User
-	if err := db.First(&user, id).Error; err != nil {
+	sql_users_se := "select * from users where id =" + strconv.Itoa(id)
+	dataApi, _ := DataApi.NewDataApiClient()
+	res, err := dataApi.ExecuteSQl(sql_users_se)
+	if err != nil {
 		return nil, err
 	}
-
+	fmt.Println(res.Body.Data.Records[0][3].StringValue)
+	//user.Username = *res.Body.Data.Records[0][3].StringValue
+	fmt.Println(user.Username)
+	user.Password = res.Body.Data.Records[0][4].StringValue
+	user.Admin = *res.Body.Data.Records[0][5].BooleanValue
 	if username != nil {
 		user.Username = *username
 	}
-
 	if password != nil {
 		hashedPassBytes, err := bcrypt.GenerateFromPassword([]byte(*password), 12)
 		if err != nil {
@@ -351,122 +281,23 @@ func (r *mutationResolver) UpdateUser(ctx context.Context, id int, username *str
 
 		user.Password = &hashedPass
 	}
-
+	var ad int
 	if admin != nil {
 		user.Admin = *admin
 	}
-
-	if err := db.Save(&user).Error; err != nil {
-		return nil, errors.Wrap(err, "failed to update user")
+	if user.Admin == true {
+		ad = 1
+	} else {
+		ad = 0
 	}
-
+	sql_users_up := "update users set username=\"" + user.Username + "\",password=\"" + *user.Password + "\",admin=" + strconv.Itoa(ad) + " where id=" + strconv.Itoa(id)
+	res, err = dataApi.ExecuteSQl(sql_users_up)
+	fmt.Println(res)
+	if err != nil {
+		return nil, err
+	}
 	return &user, nil
 }
-
-//更改了更新用户的操作
-//func (r *mutationResolver) UpdateUser(ctx context.Context, id int, username *string, password *string, admin *bool) (*models.User, error) {
-//	//配置数据库连接
-//	database := "photoview"
-//	resourceArn := "acs:rds:cn-hangzhou:2304982093480287:dbInstance/rm-dingliang024"
-//	secretArn := "acs:rds:cn-hangzhou:2304982093480287:rds-db-credentials/aurora-taKgr1"
-//	var o client.ExecuteStatementRequest
-//
-//	o.Database = &database
-//	o.ResourceArn = &resourceArn
-//	o.SecretArn = &secretArn
-//
-//	//sql执行后的返回体
-//	var res *client.ExecuteStatementResponse
-//	//sql执行的请求体
-//	var req *client.ExecuteStatementRequest
-//	//执行sql的客户端
-//	var client client.Client
-//	//客户端的配置
-//	var config openapi.Config
-//	//初始化客户端配置
-//	config.SetAccessKeyId("ACSTQDkNtSMrZtwL")
-//	config.SetAccessKeySecret("zXJ7QF79Oz")
-//	config.SetEndpoint("rds-data-daily.aliyuncs.com")
-//	client.Init(&config)
-//	//请求体指向真实的
-//	req = &o
-//
-//	//db := r.DB(ctx)
-//
-//	if username == nil && password == nil && admin == nil {
-//		return nil, errors.New("no updates requested")
-//	}
-//
-//	var user models.User
-//	//if err := db.First(&user, id).Error; err != nil {
-//	//	return nil, err
-//	//}
-//	sql_users_se := "select * from users where id =" + strconv.Itoa(id) + "limit 1"
-//	req.Sql = &sql_users_se
-//	res, err := client.ExecuteStatement(req)
-//	if err != nil {
-//		return nil, err
-//	}
-//	//user.ID = int(*res.Body.Data.Records[0][0].LongValue)
-//	user.Username = *res.Body.Data.Records[0][3].StringValue
-//	fmt.Println(user.Username)
-//	user.Password = res.Body.Data.Records[0][4].StringValue
-//	user.Admin = *res.Body.Data.Records[0][5].BooleanValue
-//	if username != nil {
-//		user.Username = *username
-//	}
-//	if password != nil {
-//		hashedPassBytes, err := bcrypt.GenerateFromPassword([]byte(*password), 12)
-//		if err != nil {
-//			return nil, err
-//		}
-//		hashedPass := string(hashedPassBytes)
-//
-//		user.Password = &hashedPass
-//	}
-//	var ad int
-//	if admin != nil {
-//		user.Admin = *admin
-//	}
-//	if user.Admin == true {
-//		ad = 1
-//	} else {
-//		ad = 0
-//	}
-//	//if err := db.Save(&user).Error; err != nil {
-//	//	return nil, errors.Wrap(err, "failed to update user")
-//	//}
-//	sql_users_up := "update users set username=" + user.Username + "\",password=\"" + *user.Password + "\",admin=" + strconv.Itoa(ad) + " where id =" + strconv.Itoa(id)
-//	req.Sql = &sql_users_up
-//	//if username != nil {
-//	//	sql_users_up += "\"" + *username + "\""
-//	//} else {
-//	//	sql_users_up += "\"" + *name + "\""
-//	//}
-//	//sql_users_up += ",password"
-//	//if password != nil {
-//	//	sql_users_up += "\"" + *password + "\""
-//	//} else {
-//	//	sql_users_up += "\"" + *pass + "\""
-//	//}
-//	//sql_users_up += ",admin"
-//	//if admin != nil {
-//	//	sql_users_up += strconv.Itoa(ad)
-//	//} else {
-//	//	sql_users_up += strconv.Itoa(0)
-//	//}
-//	//sql_users_up += "where id ="
-//	//sql_users_up += strconv.Itoa(id)
-//	res, err = client.ExecuteStatement(req)
-//	fmt.Println(res)
-//	if err != nil {
-//		return nil, err
-//	}
-//	//user.ID = id
-//	//user.Password = password
-//	//user.Admin = *admin
-//	return &user, nil
-//}
 
 func (r *mutationResolver) CreateUser(ctx context.Context, username string, password *string, admin bool) (*models.User, error) {
 
@@ -537,7 +368,7 @@ func (r *mutationResolver) UserRemoveRootAlbum(ctx context.Context, userID int, 
 		}
 
 		result := tx.Exec("DELETE FROM user_albums WHERE user_id = ? and album_id IN (?)", userID, childAlbumIDs)
-		if result.Error != nil {
+		if result.Error != nil { //SELECT * FROM `users` WHERE `users`.`id` = 13 ORDER BY `users`.`id` LIMIT 1
 			return result.Error
 		}
 

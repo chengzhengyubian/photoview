@@ -18,7 +18,7 @@ func makeMediaURLLoader(db *gorm.DB, filter func(query *gorm.DB) *gorm.DB) func(
 
 		filter(query)
 
-		if err := query.Find(&urls).Error; err != nil {
+		if err := query.Find(&urls).Error; err != nil { //SELECT * FROM `media_urls` WHERE media_id IN (2) AND (purpose = 'high-res' OR (purpose = 'original' AND content_type IN ('image/jpeg','image/png','image/webp','image/bmp')))
 			return nil, []error{errors.Wrap(err, "media url loader database query")}
 		}
 

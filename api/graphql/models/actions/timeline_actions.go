@@ -39,15 +39,15 @@ func MyTimeline(db *gorm.DB, user *models.User, paginate *models.Pagination, onl
 	if fromDate != nil {
 		query = query.Where("media.date_shot < ?", fromDate)
 	}
-
+	//SELECT `media`.`id`,`media`.`created_at`,`media`.`updated_at`,`media`.`title`,`media`.`path`,`media`.`path_hash`,`media`.`album_id`,`media`.`exif_id`,`media`.`date_shot`,`media`.`type`,`media`.`video_metadata_id`,`media`.`side_car_path`,`media`.`side_car_hash`,`media`.`blurhash` FROM `media` JOIN albums ON media.album_id = albums.id WHERE albums.id IN (SELECT user_albums.album_id FROM `user_albums` WHERE user_id = 2) ORDER BY YEAR(media.date_shot) DESC,MONTH(media.date_shot) DESC,DAY(media.date_shot) DESC,albums.title ASC,TIME(media.date_shot) DESC LIMIT 200 OFFSET 3
 	if onlyFavorites != nil && *onlyFavorites {
 		query = query.Where("media.id IN (?)", db.Table("user_media_data").Select("user_media_data.media_id").Where("user_media_data.user_id = ?", user.ID).Where("user_media_data.favorite"))
 	}
 
 	query = models.FormatSQL(query, nil, paginate)
-
+	//SELECT `media`.`id`,`media`.`created_at`,`media`.`updated_at`,`media`.`title`,`media`.`path`,`media`.`path_hash`,`media`.`album_id`,`media`.`exif_id`,`media`.`date_shot`,`media`.`type`,`media`.`video_metadata_id`,`media`.`side_car_path`,`media`.`side_car_hash`,`media`.`blurhash` FROM `media` JOIN albums ON media.album_id = albums.id WHERE albums.id IN (SELECT user_albums.album_id FROM `user_albums` WHERE user_id = 2) ORDER BY YEAR(media.date_shot) DESC,MONTH(media.date_shot) DESC,DAY(media.date_shot) DESC,albums.title ASC,TIME(media.date_shot) DESC LIMIT 200 OFFSET 3
 	var media []*models.Media
-	if err := query.Find(&media).Error; err != nil {
+	if err := query.Find(&media).Error; err != nil { //SELECT `media`.`id`,`media`.`created_at`,`media`.`updated_at`,`media`.`title`,`media`.`path`,`media`.`path_hash`,`media`.`album_id`,`media`.`exif_id`,`media`.`date_shot`,`media`.`type`,`media`.`video_metadata_id`,`media`.`side_car_path`,`media`.`side_car_hash`,`media`.`blurhash` FROM `media` JOIN albums ON media.album_id = albums.id WHERE albums.id IN (SELECT user_albums.album_id FROM `user_albums` WHERE user_id = 2) AND media.id IN (SELECT user_media_data.media_id FROM `user_media_data` WHERE user_media_data.user_id = 2 AND user_media_data.favorite) ORDER BY YEAR(media.date_shot) DESC,MONTH(media.date_shot) DESC,DAY(media.date_shot) DESC,albums.title ASC,TIME(media.date_shot) DESC LIMIT 200 OFFSET 1
 		return nil, err
 	}
 

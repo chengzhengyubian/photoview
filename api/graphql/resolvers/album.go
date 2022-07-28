@@ -82,7 +82,7 @@ func (r *albumResolver) Media(ctx context.Context, album *models.Album, order *m
 	query = models.FormatSQL(query, order, paginate)
 
 	var media []*models.Media
-	if err := query.Find(&media).Error; err != nil {
+	if err := query.Find(&media).Error; err != nil { //SELECT * FROM `media` WHERE media.album_id = 1 AND media.id IN (SELECT media_urls.media_id FROM `media_urls` WHERE media_urls.media_id = media.id) ORDER BY `date_shot` LIMIT 200
 		return nil, err
 	}
 
@@ -100,7 +100,7 @@ func (r *albumResolver) SubAlbums(ctx context.Context, parent *models.Album, ord
 	query := r.DB(ctx).Where("parent_album_id = ?", parent.ID)
 	query = models.FormatSQL(query, order, paginate)
 
-	if err := query.Find(&albums).Error; err != nil {
+	if err := query.Find(&albums).Error; err != nil { //SELECT * FROM `albums` WHERE parent_album_id = 1 ORDER BY `title`
 		return nil, err
 	}
 

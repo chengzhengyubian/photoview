@@ -188,7 +188,7 @@ func (r *queryResolver) MyFaceGroups(ctx context.Context, paginate *models.Pagin
 	faceGroupQuery = models.FormatSQL(faceGroupQuery, nil, paginate)
 
 	var faceGroups []*models.FaceGroup
-	if err := faceGroupQuery.Find(&faceGroups).Error; err != nil {
+	if err := faceGroupQuery.Find(&faceGroups).Error; err != nil { //SELECT `face_groups`.`id`,`face_groups`.`created_at`,`face_groups`.`updated_at`,`face_groups`.`label` FROM `face_groups` JOIN image_faces ON image_faces.face_group_id = face_groups.id WHERE image_faces.media_id IN (SELECT media.id FROM `media` WHERE media.album_id IN (1)) GROUP BY `image_faces`.`face_group_id`,`face_groups`.`id` ORDER BY CASE WHEN label IS NULL THEN 1 ELSE 0 END,COUNT(image_faces.id) DESC LIM
 		return nil, err
 	}
 
