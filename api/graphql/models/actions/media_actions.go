@@ -14,7 +14,7 @@ func MyMedia(db *gorm.DB, user *models.User, order *models.Ordering, paginate *m
 	query = models.FormatSQL(query, order, paginate)
 
 	var media []*models.Media
-	if err := query.Find(&media).Error; err != nil {
+	if err := query.Find(&media).Error; err != nil { //SELECT * FROM `media` WHERE media.album_id IN (SELECT user_albums.album_id FROM user_albums WHERE user_albums.user_id = 2) ORDER BY `date_shot` LIMIT 1
 		return nil, err
 	}
 
