@@ -190,12 +190,11 @@ func (s *BatchExecuteStatementShrinkRequest) SetTransactionId(v string) *BatchEx
 }
 
 type BatchExecuteStatementResponseBody struct {
-	Code    *string                                `json:"code,omitempty" xml:"code,omitempty"`
-	Data    *BatchExecuteStatementResponseBodyData `json:"data,omitempty" xml:"data,omitempty" type:"Struct"`
-	Message *string                                `json:"message,omitempty" xml:"message,omitempty"`
-	// Id of the request
-	RequestId *string `json:"requestId,omitempty" xml:"requestId,omitempty"`
-	Success   *bool   `json:"success,omitempty" xml:"success,omitempty"`
+	Code      *string                                `json:"code,omitempty" xml:"code,omitempty"`
+	Data      *BatchExecuteStatementResponseBodyData `json:"data,omitempty" xml:"data,omitempty" type:"Struct"`
+	Message   *string                                `json:"message,omitempty" xml:"message,omitempty"`
+	RequestId *string                                `json:"requestId,omitempty" xml:"requestId,omitempty"`
+	Success   *bool                                  `json:"success,omitempty" xml:"success,omitempty"`
 }
 
 func (s BatchExecuteStatementResponseBody) String() string {
@@ -377,12 +376,11 @@ func (s *BeginTransactionRequest) SetSecretArn(v string) *BeginTransactionReques
 }
 
 type BeginTransactionResponseBody struct {
-	Code    *string                           `json:"code,omitempty" xml:"code,omitempty"`
-	Data    *BeginTransactionResponseBodyData `json:"data,omitempty" xml:"data,omitempty" type:"Struct"`
-	Message *string                           `json:"message,omitempty" xml:"message,omitempty"`
-	// Id of the request
-	RequestId *string `json:"requestId,omitempty" xml:"requestId,omitempty"`
-	Success   *bool   `json:"success,omitempty" xml:"success,omitempty"`
+	Code      *string                           `json:"code,omitempty" xml:"code,omitempty"`
+	Data      *BeginTransactionResponseBodyData `json:"data,omitempty" xml:"data,omitempty" type:"Struct"`
+	Message   *string                           `json:"message,omitempty" xml:"message,omitempty"`
+	RequestId *string                           `json:"requestId,omitempty" xml:"requestId,omitempty"`
+	Success   *bool                             `json:"success,omitempty" xml:"success,omitempty"`
 }
 
 func (s BeginTransactionResponseBody) String() string {
@@ -500,12 +498,11 @@ func (s *CommitTransactionRequest) SetTransactionId(v string) *CommitTransaction
 }
 
 type CommitTransactionResponseBody struct {
-	Code    *string                            `json:"code,omitempty" xml:"code,omitempty"`
-	Data    *CommitTransactionResponseBodyData `json:"data,omitempty" xml:"data,omitempty" type:"Struct"`
-	Message *string                            `json:"message,omitempty" xml:"message,omitempty"`
-	// Id of the request
-	RequestId *string `json:"requestId,omitempty" xml:"requestId,omitempty"`
-	Success   *bool   `json:"success,omitempty" xml:"success,omitempty"`
+	Code      *string                            `json:"code,omitempty" xml:"code,omitempty"`
+	Data      *CommitTransactionResponseBodyData `json:"data,omitempty" xml:"data,omitempty" type:"Struct"`
+	Message   *string                            `json:"message,omitempty" xml:"message,omitempty"`
+	RequestId *string                            `json:"requestId,omitempty" xml:"requestId,omitempty"`
+	Success   *bool                              `json:"success,omitempty" xml:"success,omitempty"`
 }
 
 func (s CommitTransactionResponseBody) String() string {
@@ -835,12 +832,11 @@ func (s *ExecuteStatementShrinkRequest) SetTransactionId(v string) *ExecuteState
 }
 
 type ExecuteStatementResponseBody struct {
-	Code    *string                           `json:"code,omitempty" xml:"code,omitempty"`
-	Data    *ExecuteStatementResponseBodyData `json:"data,omitempty" xml:"data,omitempty" type:"Struct"`
-	Message *string                           `json:"message,omitempty" xml:"message,omitempty"`
-	// Id of the request
-	RequestId *string `json:"requestId,omitempty" xml:"requestId,omitempty"`
-	Success   *bool   `json:"success,omitempty" xml:"success,omitempty"`
+	Code      *string                           `json:"code,omitempty" xml:"code,omitempty"`
+	Data      *ExecuteStatementResponseBodyData `json:"data,omitempty" xml:"data,omitempty" type:"Struct"`
+	Message   *string                           `json:"message,omitempty" xml:"message,omitempty"`
+	RequestId *string                           `json:"requestId,omitempty" xml:"requestId,omitempty"`
+	Success   *bool                             `json:"success,omitempty" xml:"success,omitempty"`
 }
 
 func (s ExecuteStatementResponseBody) String() string {
@@ -1265,12 +1261,11 @@ func (s *RollbackTransactionRequest) SetTransactionId(v string) *RollbackTransac
 }
 
 type RollbackTransactionResponseBody struct {
-	Code    *string                              `json:"code,omitempty" xml:"code,omitempty"`
-	Data    *RollbackTransactionResponseBodyData `json:"data,omitempty" xml:"data,omitempty" type:"Struct"`
-	Message *string                              `json:"message,omitempty" xml:"message,omitempty"`
-	// Id of the request
-	RequestId *string `json:"requestId,omitempty" xml:"requestId,omitempty"`
-	Success   *bool   `json:"success,omitempty" xml:"success,omitempty"`
+	Code      *string                              `json:"code,omitempty" xml:"code,omitempty"`
+	Data      *RollbackTransactionResponseBodyData `json:"data,omitempty" xml:"data,omitempty" type:"Struct"`
+	Message   *string                              `json:"message,omitempty" xml:"message,omitempty"`
+	RequestId *string                              `json:"requestId,omitempty" xml:"requestId,omitempty"`
+	Success   *bool                                `json:"success,omitempty" xml:"success,omitempty"`
 }
 
 func (s RollbackTransactionResponseBody) String() string {

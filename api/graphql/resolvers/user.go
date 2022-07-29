@@ -5,13 +5,6 @@ import (
 	"fmt"
 	DataApi "github.com/photoview/photoview/api/dataapi"
 	_ "github.com/photoview/photoview/api/database"
-	"golang.org/x/crypto/bcrypt"
-	"log"
-	"os"
-	"path"
-	"rds-data-20220330/client"
-	"strconv"
-
 	api "github.com/photoview/photoview/api/graphql"
 	"github.com/photoview/photoview/api/graphql/auth"
 	"github.com/photoview/photoview/api/graphql/models"
@@ -20,7 +13,14 @@ import (
 	"github.com/photoview/photoview/api/scanner/face_detection"
 	"github.com/photoview/photoview/api/utils"
 	"github.com/pkg/errors"
+	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
+	"log"
+	"os"
+	"path"
+	"rds-data-20220330/client"
+	"strconv"
+	"time"
 )
 
 type userResolver struct {
@@ -31,6 +31,7 @@ func (r *Resolver) User() api.UserResolver {
 	return &userResolver{r}
 }
 
+//修改完
 func (r *queryResolver) User(ctx context.Context, order *models.Ordering, paginate *models.Pagination) ([]*models.User, error) {
 	sql_users_se := "select * from users"
 	dataApi, _ := DataApi.NewDataApiClient()
@@ -51,6 +52,7 @@ func (r *queryResolver) User(ctx context.Context, order *models.Ordering, pagina
 	return users, nil
 }
 
+//
 func (r *userResolver) Albums(ctx context.Context, user *models.User) ([]*models.Album, error) {
 	user.FillAlbums(r.DB(ctx))
 
@@ -61,17 +63,28 @@ func (r *userResolver) Albums(ctx context.Context, user *models.User) ([]*models
 	return pointerAlbums, nil
 }
 
+//修改完
 func (r *userResolver) RootAlbums(ctx context.Context, user *models.User) (albums []*models.Album, err error) {
-	db := r.DB(ctx)
-	//SELECT `albums`.`id`,`albums`.`created_at`,`albums`.`updated_at`,`albums`.`title`,`albums`.`parent_album_id`,`albums`.`path`,`albums`.`path_hash`,`albums`.`cover_id` FROM `albums` JOIN `user_albums` ON `user_albums`.`album_id` = `albums`.`id` AND `user_albums`.`user_id` = 12 WHERE albums.parent_album_id NOT IN (SELECT albums.id FROM `user_albums` JOIN albums ON albums.id = user_albums.album_id AND user_albums.user_id = 12) OR albums.parent_album_id IS NULL
-	err = db.Model(&user).
-		Where("albums.parent_album_id NOT IN (?)",
-			db.Table("user_albums").
-				Select("albums.id").
-				Joins("JOIN albums ON albums.id = user_albums.album_id AND user_albums.user_id = ?", user.ID),
-		).Or("albums.parent_album_id IS NULL").
-		Association("Albums").Find(&albums) //SELECT `albums`.`id`,`albums`.`created_at`,`albums`.`updated_at`,`albums`.`title`,`albums`.`parent_album_id`,`albums`.`path`,`albums`.`path_hash`,`albums`.`cover_id` FROM `albums` JOIN `user_albums` ON `user_albums`.`album_id` = `albums`.`id` AND `user_albums`.`user_id` = 5 WHERE albums.parent_album_id NOT IN (SELECT albums.id FROM `user_albums` JOIN albums ON albums.id = user_albums.album_id AND user_albums.user_id = 5) OR albums.parent_album_id IS NULL
-
+	//SELECT `albums`.`id`,`albums`.`created_at`,`albums`.`updated_at`,`albums`.`title`,`albums`.`parent_album_id`,`albums`.`path`,`albums`.`path_hash`,`albums`.`cover_id` FROM `albums` JOIN `user_albums` ON `user_albums`.`album_id` = `albums`.`id` AND `user_albums`.`user_id` = 5 WHERE albums.parent_album_id NOT IN (SELECT albums.id FROM `user_albums` JOIN albums ON albums.id = user_albums.album_id AND user_albums.user_id = 5) OR albums.parent_album_id IS NULL
+	fmt.Println(user.ID)
+	dataApi, _ := DataApi.NewDataApiClient()
+	sql := "SELECT `albums`.`id`,`albums`.`created_at`,`albums`.`updated_at`,`albums`.`title`,`albums`.`parent_album_id`,`albums`.`path`,`albums`.`path_hash`,`albums`.`cover_id` FROM `albums` JOIN `user_albums` ON `user_albums`.`album_id` = `albums`.`id` AND `user_albums`.`user_id` =" + strconv.Itoa(user.ID) + " WHERE albums.parent_album_id NOT IN (SELECT albums.id FROM `user_albums` JOIN albums ON albums.id = user_albums.album_id AND user_albums.user_id = " + strconv.Itoa(user.ID) + ") OR albums.parent_album_id IS NULL"
+	res, err := dataApi.Query(sql)
+	fmt.Println(res)
+	num := len(res)
+	for i := 0; i < num; i++ {
+		var album models.Album
+		album.ID = DataApi.GetInt(res, i, 0)
+		album.CreatedAt = time.Unix(*res[i][1].LongValue/1000, 0)
+		album.UpdatedAt = time.Unix(*res[i][2].LongValue/1000, 0)
+		album.Title = DataApi.GetString(res, i, 3)
+		album.ParentAlbumID = DataApi.GetIntP(res, i, 4)
+		album.Path = DataApi.GetString(res, i, 5)
+		album.PathHash = DataApi.GetString(res, i, 6)
+		album.CoverID = DataApi.GetIntP(res, i, 7)
+		albums = append(albums, &album)
+	}
+	fmt.Println(len(albums))
 	return
 }
 
@@ -85,31 +98,21 @@ func (r *queryResolver) MyUser(ctx context.Context) (*models.User, error) {
 	return user, nil
 }
 
+//修改完
 func (r *mutationResolver) AuthorizeUser(ctx context.Context, username string, password string) (*models.AuthorizeResult, error) {
-	db := r.DB(ctx)
-	user, err := models.AuthorizeUser(db, username, password)
+	//db := r.DB(ctx)
+	user, err := models.AuthorizeUser(username, password)
 	if err != nil {
 		return &models.AuthorizeResult{
 			Success: false,
 			Status:  err.Error(),
 		}, nil
 	}
-
 	var token *models.AccessToken
-
-	transactionError := db.Transaction(func(tx *gorm.DB) error {
-		token, err = user.GenerateAccessToken(tx)
-		if err != nil {
-			return err
-		}
-
-		return nil
-	})
-
-	if transactionError != nil {
-		return nil, transactionError
+	token, err = user.GenerateAccessToken()
+	if err != nil {
+		fmt.Println(err)
 	}
-
 	return &models.AuthorizeResult{
 		Success: true,
 		Status:  "ok",
@@ -136,7 +139,9 @@ func (r *mutationResolver) InitialSetupWizard(ctx context.Context, username stri
 		if err := tx.Exec("UPDATE site_info SET initial_setup = false").Error; err != nil {
 			return err
 		}
-
+		//sql_site_info_up:=""
+		//dataApi,_:=DataApi.NewDataApiClient()
+		//dataApi.ExecuteSQl()
 		user, err := models.RegisterUser(username, &password, true)
 		if err != nil {
 			return err
@@ -147,7 +152,7 @@ func (r *mutationResolver) InitialSetupWizard(ctx context.Context, username stri
 			return err
 		}
 
-		token, err = user.GenerateAccessToken(tx)
+		token, err = user.GenerateAccessToken()
 		if err != nil {
 			return err
 		}
@@ -169,6 +174,7 @@ func (r *mutationResolver) InitialSetupWizard(ctx context.Context, username stri
 	}, nil
 }
 
+//修改完
 func (r *queryResolver) MyUserPreferences(ctx context.Context) (*models.UserPreferences, error) {
 	dataApi, _ := DataApi.NewDataApiClient()
 	var res *client.ExecuteStatementResponse
@@ -214,6 +220,7 @@ func (r *queryResolver) MyUserPreferences(ctx context.Context) (*models.UserPref
 	return &userPref, nil
 }
 
+//修改完
 func (r *mutationResolver) ChangeUserPreferences(ctx context.Context, language *string) (*models.UserPreferences, error) {
 	dataApi, _ := DataApi.NewDataApiClient()
 	var m *client.ExecuteStatementResponse
@@ -253,7 +260,7 @@ func (r *mutationResolver) ChangeUserPreferences(ctx context.Context, language *
 	return &userPref, nil
 }
 
-//更改了更新用户的操作
+//修改完
 func (r *mutationResolver) UpdateUser(ctx context.Context, id int, username *string, password *string, admin *bool) (*models.User, error) {
 	if username == nil && password == nil && admin == nil {
 		return nil, errors.New("no updates requested")
@@ -319,23 +326,12 @@ func (r *mutationResolver) UpdateUser(ctx context.Context, id int, username *str
 }
 
 func (r *mutationResolver) CreateUser(ctx context.Context, username string, password *string, admin bool) (*models.User, error) {
-
 	var user *models.User
-
-	transactionError := r.DB(ctx).Transaction(func(tx *gorm.DB) error {
-		var err error
-		user, err = models.RegisterUser(username, password, admin)
-		if err != nil {
-			return err
-		}
-
-		return nil
-	})
-
-	if transactionError != nil {
-		return nil, transactionError
+	var err error
+	user, err = models.RegisterUser(username, password, admin)
+	if err != nil {
+		fmt.Println(err)
 	}
-
 	return user, nil
 }
 
@@ -343,16 +339,28 @@ func (r *mutationResolver) DeleteUser(ctx context.Context, id int) (*models.User
 	return actions.DeleteUser(r.DB(ctx), id)
 }
 
+//修改完
 func (r *mutationResolver) UserAddRootPath(ctx context.Context, id int, rootPath string) (*models.Album, error) {
 	db := r.DB(ctx)
 
 	rootPath = path.Clean(rootPath)
 
 	var user models.User
-	if err := db.First(&user, id).Error; err != nil {
+	//if err := db.First(&user, id).Error; err != nil {
+	//	return nil, err
+	//}
+	sql_users_se := "select * from users where id=" + strconv.Itoa(id) //+ "order by id limit 1"
+	dataApi, _ := DataApi.NewDataApiClient()
+	res, err := dataApi.ExecuteSQl(sql_users_se)
+	if len(res.Body.Data.Records) == 0 {
 		return nil, err
+	} else {
+		user.ID = int(*res.Body.Data.Records[0][0].LongValue)
+		user.Username = *res.Body.Data.Records[0][3].StringValue
+		user.Password = res.Body.Data.Records[0][4].StringValue
+		fmt.Println(res.Body.Data.Records[0][5].IsNull)
+		user.Admin = *res.Body.Data.Records[0][5].BooleanValue
 	}
-
 	newAlbum, err := scanner.NewRootAlbum(db, rootPath, &user)
 	if err != nil {
 		return nil, err
@@ -375,7 +383,7 @@ func (r *mutationResolver) UserRemoveRootAlbum(ctx context.Context, userID int, 
 		if err := tx.Raw("DELETE FROM user_albums WHERE user_id = ? AND album_id = ?", userID, albumID).Error; err != nil {
 			return err
 		}
-
+		//dataApi,_:=DataApi.NewDataApiClient()
 		children, err := album.GetChildren(tx, nil)
 		if err != nil {
 			return err

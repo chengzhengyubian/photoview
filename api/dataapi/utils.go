@@ -35,6 +35,18 @@ func GetInt(records [][]*client.ExecuteStatementResponseBodyDataRecords, row int
 	return int(*records[row][colum].LongValue)
 }
 
+func GetIntP(records [][]*client.ExecuteStatementResponseBodyDataRecords, row int, colum int) *int {
+	var n *int
+	if recordsDataIsNull(records, row, colum) {
+		m := 0
+		n = &m
+		return n
+	}
+	m := int(*records[row][colum].LongValue)
+	n = &m
+	return n
+}
+
 func GetBoolean(records [][]*client.ExecuteStatementResponseBodyDataRecords, row int, colum int) bool {
 	if recordsDataIsNull(records, row, colum) {
 		return false

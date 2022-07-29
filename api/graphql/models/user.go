@@ -76,7 +76,7 @@ func (u *UserPreferences) BeforeSave(tx *gorm.DB) error {
 var ErrorInvalidUserCredentials = errors.New("invalid credentials")
 
 //修改后
-func AuthorizeUser(db *gorm.DB, username string, password string) (*User, error) {
+func AuthorizeUser(username string, password string) (*User, error) {
 	var user User
 
 	//result := db.Where("username = ?", username).First(&user)
@@ -151,7 +151,7 @@ func RegisterUser(username string, password *string, admin bool) (*User, error) 
 }
 
 //更改完
-func (user *User) GenerateAccessToken(db *gorm.DB) (*AccessToken, error) {
+func (user *User) GenerateAccessToken() (*AccessToken, error) {
 
 	bytes := make([]byte, 24)
 	if _, err := rand.Read(bytes); err != nil {

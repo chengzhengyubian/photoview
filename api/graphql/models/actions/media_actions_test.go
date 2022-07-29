@@ -13,7 +13,7 @@ func TestMyMedia(t *testing.T) {
 	db := test_utils.DatabaseTest(t)
 
 	password := "1234"
-	user, err := models.RegisterUser(db, "user", &password, false)
+	user, err := models.RegisterUser("user", &password, false)
 	assert.NoError(t, err)
 
 	rootAlbum := models.Album{
@@ -59,7 +59,7 @@ func TestMyMedia(t *testing.T) {
 
 	assert.NoError(t, db.Save(&media).Error)
 
-	anotherUser, err := models.RegisterUser(db, "user2", &password, false)
+	anotherUser, err := models.RegisterUser("user2", &password, false)
 	assert.NoError(t, err)
 
 	anotherAlbum := models.Album{

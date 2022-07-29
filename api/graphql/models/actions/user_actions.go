@@ -2,6 +2,8 @@ package actions
 
 import (
 	"errors"
+	"fmt"
+	DataApi "github.com/photoview/photoview/api/dataapi"
 	"os"
 	"path"
 	"strconv"
@@ -11,19 +13,34 @@ import (
 	"gorm.io/gorm"
 )
 
+//修改了一部分还未测试
 func DeleteUser(db *gorm.DB, userID int) (*models.User, error) {
 
 	// make sure the last admin user is not deleted
 	var adminUsers []*models.User
-	db.Model(&models.User{}).Where("admin = true").Limit(2).Find(&adminUsers) //SELECT * FROM `users` WHERE admin = true LIMIT 2
+	//db.Model(&models.User{}).Where("admin = true").Limit(2).Find(&adminUsers) //SELECT * FROM `users` WHERE admin = true LIMIT 2
+	sql_users_se := "select * from users where admin = true limit 2"
+	dataApi, _ := DataApi.NewDataApiClient()
+	res, err := dataApi.ExecuteSQl(sql_users_se)
+	num := len(res.Body.Data.Records)
+	for i := 0; i < num; i++ {
+		var user models.User
+		user.ID = int(*res.Body.Data.Records[0][0].LongValue)
+		user.Username = *res.Body.Data.Records[0][3].StringValue
+		user.Password = res.Body.Data.Records[0][4].StringValue
+		user.Admin = *res.Body.Data.Records[0][5].IsNull
+		adminUsers = append(adminUsers, &user)
+	}
+	if err != nil {
+		fmt.Println(err)
+	}
 	if len(adminUsers) == 1 && adminUsers[0].ID == userID {
 		return nil, errors.New("deleting sole admin user is not allowed")
 	}
-
 	var user models.User
 	deletedAlbumIDs := make([]int, 0)
 
-	err := db.Transaction(func(tx *gorm.DB) error {
+	err = db.Transaction(func(tx *gorm.DB) error {
 		if err := tx.First(&user, userID).Error; err != nil { //SELECT * FROM `users` WHERE `users`.`id` = 12 ORDER BY `users`.`id` LIMIT 1
 			return err
 		}
