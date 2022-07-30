@@ -36,9 +36,10 @@ func (a *Album) GetChildren(db *gorm.DB, filter func(*gorm.DB) *gorm.DB) (childr
 	return GetChildrenFromAlbums(db, filter, []int{a.ID})
 }
 
+//修改中
 func GetChildrenFromAlbums(db *gorm.DB, filter func(*gorm.DB) *gorm.DB, albumIDs []int) (children []*Album, err error) {
 	query := db.Model(&Album{}).Table("sub_albums")
-
+	//标记一下，应该是递归
 	if filter != nil {
 		query = filter(query)
 	}
@@ -52,7 +53,14 @@ func GetChildrenFromAlbums(db *gorm.DB, filter func(*gorm.DB) *gorm.DB, albumIDs
 
 	?
 	`, albumIDs, query).Find(&children).Error
+	/* WITH recursive sub_albums AS (
+	           SELECT * FROM albums AS root WHERE id IN (110)
+	           UNION ALL
+	           SELECT child.* FROM albums AS child JOIN sub_albums ON child.parent_album_id = sub_albums.id
+	   )
 
+	   SELECT * FROM `sub_albums`
+	*/
 	return children, err
 }
 

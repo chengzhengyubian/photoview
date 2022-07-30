@@ -2,11 +2,7 @@ package scanner
 
 import (
 	"fmt"
-	"io/ioutil"
-	"log"
-	"os"
-	"path"
-
+	//DataApi "github.com/photoview/photoview/api/dataapi"
 	"github.com/photoview/photoview/api/graphql/models"
 	"github.com/photoview/photoview/api/scanner/media_encoding"
 	"github.com/photoview/photoview/api/scanner/scanner_task"
@@ -15,8 +11,14 @@ import (
 	"github.com/photoview/photoview/api/utils"
 	"github.com/pkg/errors"
 	"gorm.io/gorm"
+	"io/ioutil"
+	"log"
+	"os"
+	"path"
+	//"time"
 )
 
+//修改中
 func NewRootAlbum(db *gorm.DB, rootPath string, owner *models.User) (*models.Album, error) {
 
 	if !ValidRootPath(rootPath) {
@@ -40,7 +42,26 @@ func NewRootAlbum(db *gorm.DB, rootPath string, owner *models.User) (*models.Alb
 	if err := db.Where("path_hash = ?", models.MD5Hash(rootPath)).Find(&matchedAlbums).Error; err != nil { //SELECT * FROM `albums` WHERE path_hash = '1f7d46bead15a13c555e549e19624753'
 		return nil, err
 	}
-
+	//sql_albums_se := "SELECT * FROM `albums` WHERE path_hash =\"" + models.MD5Hash(rootPath) + "\""
+	//dataApi, _ := DataApi.NewDataApiClient()
+	//res, err := dataApi.Query(sql_albums_se)
+	//fmt.Println(res)
+	//if err != nil {
+	//	fmt.Println(err)
+	//}
+	//num := len(res)
+	//for i := 0; i < num; i++ {
+	//	var album models.Album
+	//	album.ID = DataApi.GetInt(res, i, 0)
+	//	album.CreatedAt = time.Unix(*res[i][1].LongValue/1000, 0)
+	//	album.UpdatedAt = time.Unix(*res[i][2].LongValue/1000, 0)
+	//	album.Title = DataApi.GetString(res, i, 3)
+	//	album.ParentAlbumID = DataApi.GetIntP(res, i, 4)
+	//	album.Path = DataApi.GetString(res, i, 5)
+	//	album.PathHash = DataApi.GetString(res, i, 6)
+	//	album.CoverID = DataApi.GetIntP(res, i, 7)
+	//	matchedAlbums = append(matchedAlbums, album)
+	//}
 	if len(matchedAlbums) > 0 {
 		album := matchedAlbums[0]
 
@@ -48,15 +69,35 @@ func NewRootAlbum(db *gorm.DB, rootPath string, owner *models.User) (*models.Alb
 		if err := db.Table("user_albums").Where("user_id = ?", owner.ID).Where("album_id = ?", album.ID).Count(&matchedUserAlbumCount).Error; err != nil { //SELECT count(*) FROM `user_albums` WHERE user_id = 13 AND album_id = 108
 			return nil, err
 		}
-
+		//sql_user_albums_se := "SELECT count(*) FROM `user_albums` WHERE user_id =" + strconv.Itoa(owner.ID) + " AND album_id =" + strconv.Itoa(album.ID)
+		//dataApi, _ := DataApi.NewDataApiClient()
+		//res, err = dataApi.Query(sql_user_albums_se)
+		//fmt.Println(res)
+		//matchedUserAlbumCount = *res[0][0].LongValue
 		if matchedUserAlbumCount > 0 {
 			return nil, errors.New(fmt.Sprintf("user already owns a path containing this path: %s", rootPath))
 		}
 
-		if err := db.Model(&owner).Association("Albums").Append(&album); err != nil { // INSERT INTO `albums` (`created_at`,`updated_at`,`title`,`parent_album_id`,`path`,`path_hash`,`cover_id`,`id`) VALUES ('2022-07-27 03:19:43.834','2022-07-27 03:19:43.834','chengbian',NULL,'/Users/chengbian','1f7d46bead15a13c555e549e19624753',NULL,108) ON DUPLICATE KEY UPDATE `id`=`id`            UPDATE `users` SET `updated_at`='2022-07-28 10:07:37.749' WHERE `id` = 13
+		if err := db.Model(&owner).Association("Albums").Append(&album); err != nil { // INSERT INTO `albums` (`created_at`,`updated_at`,`title`,`parent_album_id`,`path`,`path_hash`,`cover_id`,`id`) VALUES ('2022-07-27 03:19:43.834','2022-07-27 03:19:43.834','chengbian',NULL,'/Users/chengbian','1f7d46bead15a13c555e549e19624753',NULL,108) ON DUPLICATE KEY UPDATE `id`=`id`     INSERT INTO `user_albums` (`user_id`,`album_id`) VALUES (18,108) ON DUPLICATE KEY UPDATE `user_id`=`user_id`       UPDATE `users` SET `updated_at`='2022-07-28 10:07:37.749' WHERE `id` = 13
 			return nil, errors.Wrap(err, "add owner to already existing album")
 		}
-
+		//if album.ParentAlbumID == nil {
+		//	albumP := "NULL"
+		//} else {
+		//	albump := *album.ParentAlbum
+		//}
+		//if album.CoverID == nil {
+		//	albumC := "NULL"
+		//} else {
+		//	albumC := *album.ParentAlbumID
+		//}
+		//sql_albums_in := "INSERT INTO `albums` (`created_at`,`updated_at`,`title`,`parent_album_id`,`path`,`path_hash`,`cover_id`,`id`) VALUES (,'2022-07-27 03:19:43.834','chengbian',NULL,'/Users/chengbian','1f7d46bead15a13c555e549e19624753',NULL,108) ON DUPLICATE KEY UPDATE `id`=`id`"
+		//fmt.Sprintf("INSERT INTO `albums` (`created_at`,`updated_at`,`title`,`parent_album_id`,`path`,`path_hash`,`cover_id`,`id`) VALUES ('%v','%v','%v',%v,'%v','%v',%v,%v) ON DUPLICATE KEY UPDATE `id`=`%v`", album.CreatedAt.Format("2006-01-02 15:04:05"),album.UpdatedAt.Format("2006-01-02 15:04:05"),album.Title,albumP)
+		//sql_user_albums_in := "INSERT INTO `user_albums` (`user_id`,`album_id`) VALUES (18,108) ON DUPLICATE KEY UPDATE `user_id`=`user_id`"
+		//sql_users_up := "UPDATE `users` SET `updated_at`='2022-07-28 10:07:37.749' WHERE `id` = 13"
+		//dataApi.ExecuteSQl(sql_albums_in)
+		//dataApi.ExecuteSQl(sql_user_albums_in)
+		//dataApi.ExecuteSQl(sql_users_up)
 		return &album, nil
 	} else {
 		album := models.Album{
@@ -65,10 +106,15 @@ func NewRootAlbum(db *gorm.DB, rootPath string, owner *models.User) (*models.Alb
 			Owners: owners,
 		}
 
-		if err := db.Create(&album).Error; err != nil {
+		if err := db.Debug().Create(&album).Error; err != nil { //INSERT INTO `users` (`created_at`,`updated_at`,`username`,`password`,`admin`,`id`) VALUES ('2022-07-29 16:53:26.95','2022-07-29 16:53:26.95','dvaergher',NULL,true,20) ON DUPLICATE KEY UPDATE `id`=`id`      INSERT INTO `user_albums` (`album_id`,`user_id`) VALUES (112,20) ON DUPLICATE KEY UPDATE `album_id`=`album_id`     INSERT INTO `albums` (`created_at`,`updated_at`,`title`,`parent_album_id`,`path`,`path_hash`,`cover_id`) VALUES ('2022-07-29 16:53:26.813','2022-07-29 16:53:26.813','suiapp',NULL,'/Users/chengbian/suiapp','15ee3b09f80f4790477703d6ef00f4de',NULL)
 			return nil, err
 		}
-
+		//sql_users_in := "INSERT INTO `users` (`created_at`,`updated_at`,`username`,`password`,`admin`,`id`) VALUES ('2022-07-29 16:53:26.95','2022-07-29 16:53:26.95','dvaergher',NULL,true,20) ON DUPLICATE KEY UPDATE `id`=`id`"
+		//sql_user_albums_in := "INSERT INTO `user_albums` (`album_id`,`user_id`) VALUES (112,20) ON DUPLICATE KEY UPDATE `album_id`=`album_id`"
+		//sql_albums_in := "INSERT INTO `albums` (`created_at`,`updated_at`,`title`,`parent_album_id`,`path`,`path_hash`,`cover_id`) VALUES ('2022-07-29 16:53:26.813','2022-07-29 16:53:26.813','suiapp',NULL,'/Users/chengbian/suiapp','15ee3b09f80f4790477703d6ef00f4de',NULL)"
+		//dataApi.ExecuteSQl(sql_users_in)
+		//dataApi.ExecuteSQl(sql_user_albums_in)
+		//dataApi.ExecuteSQl(sql_albums_in)
 		return &album, nil
 	}
 }

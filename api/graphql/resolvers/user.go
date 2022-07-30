@@ -2,6 +2,7 @@ package resolvers
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	DataApi "github.com/photoview/photoview/api/dataapi"
 	_ "github.com/photoview/photoview/api/database"
@@ -20,6 +21,7 @@ import (
 	"path"
 	"rds-data-20220330/client"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -120,6 +122,7 @@ func (r *mutationResolver) AuthorizeUser(ctx context.Context, username string, p
 	}, nil
 }
 
+//修改中
 func (r *mutationResolver) InitialSetupWizard(ctx context.Context, username string, password string, rootPath string) (*models.AuthorizeResult, error) {
 	db := r.DB(ctx)
 	siteInfo, err := models.GetSiteInfo(db)
@@ -139,9 +142,13 @@ func (r *mutationResolver) InitialSetupWizard(ctx context.Context, username stri
 		if err := tx.Exec("UPDATE site_info SET initial_setup = false").Error; err != nil {
 			return err
 		}
-		//sql_site_info_up:=""
-		//dataApi,_:=DataApi.NewDataApiClient()
-		//dataApi.ExecuteSQl()
+		sql_site_info_up := "UPDATE site_info SET initial_setup = false"
+		dataApi, _ := DataApi.NewDataApiClient()
+		res, err := dataApi.ExecuteSQl(sql_site_info_up)
+		if err != nil {
+			fmt.Println(res)
+			fmt.Println(err)
+		}
 		user, err := models.RegisterUser(username, &password, true)
 		if err != nil {
 			return err
@@ -369,64 +376,76 @@ func (r *mutationResolver) UserAddRootPath(ctx context.Context, id int, rootPath
 	return newAlbum, nil
 }
 
+//差不多修改完，事物还未改，一个函数还未改
 func (r *mutationResolver) UserRemoveRootAlbum(ctx context.Context, userID int, albumID int) (*models.Album, error) {
 	db := r.DB(ctx)
-
 	var album models.Album
-	if err := db.First(&album, albumID).Error; err != nil {
-		return nil, err
+	//if err := db.First(&album, albumID).Error; err != nil { //SELECT * FROM `albums` WHERE `albums`.`id` = 110 ORDER BY `albums`.`id` LIMIT 1
+	//	return nil, err
+	//}
+	dataApi, _ := DataApi.NewDataApiClient()
+	sql_albums_se := "SELECT * FROM `albums` WHERE `albums`.`id`=" + strconv.Itoa(albumID) + "ORDER BY `albums`.`id` LIMIT 1"
+	res, err := dataApi.Query(sql_albums_se)
+	fmt.Println(res)
+	if len(res) == 0 {
+		return nil, errors.WithMessage(err, "can't find album")
 	}
-
 	var deletedAlbumIDs []int = nil
-
 	transactionError := db.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Raw("DELETE FROM user_albums WHERE user_id = ? AND album_id = ?", userID, albumID).Error; err != nil {
-			return err
-		}
-		//dataApi,_:=DataApi.NewDataApiClient()
-		children, err := album.GetChildren(tx, nil)
+		//if err := tx.Raw("DELETE FROM user_albums WHERE user_id = ? AND album_id = ?", userID, albumID).Error; err != nil {
+		//	return err
+		//}
+		sql_user_albums_de := "DELETE FROM user_albums WHERE user_id =" + strconv.Itoa(userID) + "AND album_id =" + strconv.Itoa(albumID)
+		dataApi.ExecuteSQl(sql_user_albums_de)
+		children, err := album.GetChildren(tx, nil) //还未改
 		if err != nil {
 			return err
 		}
-
 		childAlbumIDs := make([]int, len(children))
 		for i, child := range children {
 			childAlbumIDs[i] = child.ID
 		}
-
-		result := tx.Exec("DELETE FROM user_albums WHERE user_id = ? and album_id IN (?)", userID, childAlbumIDs)
-		if result.Error != nil { //SELECT * FROM `users` WHERE `users`.`id` = 13 ORDER BY `users`.`id` LIMIT 1
-			return result.Error
-		}
-
-		if result.RowsAffected == 0 {
-			return errors.New("No relation deleted")
-		}
-
+		//result := tx.Exec("DELETE FROM user_albums WHERE user_id = ? and album_id IN (?)", userID, childAlbumIDs) //DELETE FROM user_albums WHERE user_id = 7 and album_id IN (110)
+		childAlbumid, err := json.Marshal(childAlbumIDs)
+		child := strings.Trim(string(childAlbumid), "[]")
+		sql_user_albums_child_de := "DELETE FROM user_albums WHERE user_id =" + strconv.Itoa(userID) + " and album_id IN (" + child + ")"
+		dataApi.ExecuteSQl(sql_user_albums_child_de)
+		//if result.Error != nil { //SELECT * FROM `users` WHERE `users`.`id` = 13 ORDER BY `users`.`id` LIMIT 1
+		//	return result.Error
+		//}
+		//if result.RowsAffected == 0 {
+		//	return errors.New("No relation deleted")
+		//}
 		// Cleanup if no user owns the album anymore
 		var userAlbumCount int
-		if err := tx.Raw("SELECT COUNT(user_id) FROM user_albums WHERE album_id = ?", albumID).Scan(&userAlbumCount).Error; err != nil {
-			return err
-		}
-
+		//if err := tx.Raw("SELECT COUNT(user_id) FROM user_albums WHERE album_id = ?", albumID).Scan(&userAlbumCount).Error; err != nil { //SELECT COUNT(user_id) FROM user_albums WHERE album_id = 110
+		//	return err
+		//}
+		sql_count_se := "SELECT COUNT(user_id) FROM user_albums WHERE album_id =" + strconv.Itoa(albumID)
+		res, err := dataApi.Query(sql_count_se)
+		userAlbumCount = int(*res[0][0].LongValue)
 		if userAlbumCount == 0 {
 			deletedAlbumIDs = append(childAlbumIDs, albumID)
 			childAlbumIDs = nil
 
-			// Delete albums from database
-			if err := tx.Delete(&models.Album{}, "id IN (?)", deletedAlbumIDs).Error; err != nil {
-				deletedAlbumIDs = nil
+			//Delete albums from database
+			//if err := tx.Delete(&models.Album{}, "id IN (?)", deletedAlbumIDs).Error; err != nil { // DELETE FROM `albums` WHERE id IN (110,110)
+			//	return err
+			//}
+			del, err := json.Marshal(deletedAlbumIDs)
+			if err != nil {
 				return err
 			}
+			de := strings.Trim(string(del), "[]")
+			sql_albums_de := "DELETE FROM `albums` WHERE id IN (" + de + ")"
+			dataApi.ExecuteSQl(sql_albums_de)
+			deletedAlbumIDs = nil
 		}
-
 		return nil
 	})
-
 	if transactionError != nil {
 		return nil, transactionError
 	}
-
 	if deletedAlbumIDs != nil {
 		// Delete albums from cache
 		for _, id := range deletedAlbumIDs {
@@ -436,7 +455,6 @@ func (r *mutationResolver) UserRemoveRootAlbum(ctx context.Context, userID int, 
 				return nil, err
 			}
 		}
-
 		// Reload faces as media might have been deleted
 		if face_detection.GlobalFaceDetector != nil {
 			if err := face_detection.GlobalFaceDetector.ReloadFacesFromDatabase(db); err != nil {
@@ -444,6 +462,5 @@ func (r *mutationResolver) UserRemoveRootAlbum(ctx context.Context, userID int, 
 			}
 		}
 	}
-
 	return &album, nil
 }
