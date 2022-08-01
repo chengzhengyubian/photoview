@@ -10,6 +10,7 @@ import (
 	"gorm.io/gorm"
 )
 
+//这里注意一下
 func makeMediaURLLoader(db *gorm.DB, filter func(query *gorm.DB) *gorm.DB) func(keys []int) ([]*models.MediaURL, []error) {
 	return func(mediaIDs []int) ([]*models.MediaURL, []error) {
 
@@ -22,6 +23,7 @@ func makeMediaURLLoader(db *gorm.DB, filter func(query *gorm.DB) *gorm.DB) func(
 			return nil, []error{errors.Wrap(err, "media url loader database query")}
 		}
 
+		//sql_media_urls_se:="SELECT * FROM `media_urls` WHERE media_id IN (2) AND (purpose = 'high-res' OR (purpose = 'original' AND content_type IN ('image/jpeg','image/png','image/webp','image/bmp')))"
 		resultMap := make(map[int]*models.MediaURL, len(mediaIDs))
 		for _, url := range urls {
 			resultMap[url.MediaID] = url

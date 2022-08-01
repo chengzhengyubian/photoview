@@ -83,7 +83,7 @@ func AuthorizeUser(username string, password string) (*User, error) {
 	sql_users_se := "select * from users where username=\"" + username + "\""
 	dataApi, _ := DataApi.NewDataApiClient()
 	res, err := dataApi.ExecuteSQl(sql_users_se)
-	if err != nil {
+	if len(res.Body.Data.Records) == 0 {
 		return nil, errors.Wrap(err, "failed to get user by username when authorizing")
 	}
 	user.ID = int(*res.Body.Data.Records[0][0].LongValue)
@@ -220,6 +220,7 @@ func (user *User) FillAlbums(db *gorm.DB) error {
 	return nil
 }
 
+//这里还未改,应该是递归
 func (user *User) OwnsAlbum(db *gorm.DB, album *Album) (bool, error) {
 
 	if err := user.FillAlbums(db); err != nil {
@@ -303,7 +304,7 @@ func (user *User) FavoriteMedia(db *gorm.DB, mediaID int, favorite bool) (*Media
 	if res.Body.Data.Records[0][11].IsNull != nil {
 		media.SideCarPath = nil
 	} else {
-		media.SideCarPath = res.Body.Data.Records[0][12].StringValue
+		media.SideCarPath = res.Body.Data.Records[0][11].StringValue
 	}
 	if res.Body.Data.Records[0][12].IsNull != nil {
 		media.SideCarHash = nil

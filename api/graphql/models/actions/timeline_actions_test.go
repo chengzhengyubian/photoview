@@ -14,7 +14,7 @@ func TestMyTimeline(t *testing.T) {
 	db := test_utils.DatabaseTest(t)
 
 	password := "1234"
-	user, err := models.RegisterUser(db, "user", &password, false)
+	user, err := models.RegisterUser("user", &password, false)
 	assert.NoError(t, err)
 
 	rootAlbum := models.Album{
@@ -68,7 +68,7 @@ func TestMyTimeline(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Add media not owned by first user
-	anotherUser, err := models.RegisterUser(db, "user2", &password, false)
+	anotherUser, err := models.RegisterUser("user2", &password, false)
 	assert.NoError(t, err)
 
 	anotherAlbum := models.Album{

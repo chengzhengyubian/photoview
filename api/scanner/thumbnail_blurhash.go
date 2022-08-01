@@ -23,7 +23,8 @@ func GenerateBlurhashes(db *gorm.DB) error {
 		Joins("INNER JOIN media_urls ON media.id = media_urls.media_id").
 		Where("blurhash IS NULL").
 		Where("media_urls.purpose = 'thumbnail' OR media_urls.purpose = 'video-thumbnail'")
-
+	// SELECT `media`.`id`,`media`.`created_at`,`media`.`updated_at`,`media`.`title`,`media`.`path`,`media`.`path_hash`,`media`.`album_id`,`media`.`exif_id`,`media`.`date_shot`,`media`.`type`,`media`.`video_metadata_id`,`media`.`side_car_path`,`media`.`side_car_hash`,`media`.`blurhash` FROM `media` INNER JOIN media_urls ON media.id = media_urls.media_id WHERE blurhash IS NULL AND (media_urls.purpose = 'thumbnail' OR media_urls.purpose = 'video-thumbnail') ORDER BY `media`.`id` LIMIT 50
+	//2022/08/01 17:28:21 Queue waiting
 	err := query.FindInBatches(&results, 50, func(tx *gorm.DB, batch int) error {
 		log.Printf("generating %d blurhashes", len(results))
 
@@ -49,7 +50,7 @@ func GenerateBlurhashes(db *gorm.DB) error {
 			results[i].Blurhash = &hashStr
 		}
 
-		tx.Save(results)
+		tx.Save(results) //INSERT INTO `media` (`created_at`,`updated_at`,`title`,`path`,`path_hash`,`album_id`,`exif_id`,`date_shot`,`type`,`video_metadata_id`,`side_car_path`,`side_car_hash`,`blurhash`,`id`) VALUES ('2022-08-01 20:01:03','2022-08-01 20:02:33.466','截屏2022-07-13 16.40.39.png','/Users/chengbian/iapp/photo/截屏2022-07-13 16.40.39.png','95cb6123fe7b6f2d873d9bb4d2ab8787',146,NULL,'2022-07-13 16:40:55','photo',NULL,NULL,NULL,'L3R{#?00WBxuDjxut7t7R*%MRjM{',97) ON DUPLICATE KEY UPDATE `updated_at`='2022-08-01 20:02:33.466',`title`=VALUES(`title`),`path`=VALUES(`path`),`path_hash`=VALUES(`path_hash`),`alm_id`=VALUES(`album_id`),`exif_id`=VALUES(`exif_id`),`date_shot`=VALUES(`date_shot`),`type`=VALUES(`type`),`video_metadata_id`=VALUES(`video_metadata_id`),`side_car_path`=VALUES(`side_car_path`),`side_car_hash`=VALUES(`side_car_hash`),`blurhash`=VALUES(`blurhash`)
 		// if err := db.Update("blurhash", hashes).Error; err != nil {
 		// 	return err
 		// }

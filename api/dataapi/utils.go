@@ -38,11 +38,26 @@ func GetInt(records [][]*client.ExecuteStatementResponseBodyDataRecords, row int
 func GetIntP(records [][]*client.ExecuteStatementResponseBodyDataRecords, row int, colum int) *int {
 	var n *int
 	if recordsDataIsNull(records, row, colum) {
-		m := 0
-		n = &m
-		return n
+		return nil
 	}
 	m := int(*records[row][colum].LongValue)
+	n = &m
+	return n
+}
+
+func GetLong(records [][]*client.ExecuteStatementResponseBodyDataRecords, row int, colum int) int64 {
+	if recordsDataIsNull(records, row, colum) {
+		return 0
+	}
+	return *records[row][colum].LongValue
+}
+func GetLongP(records [][]*client.ExecuteStatementResponseBodyDataRecords, row int, colum int) *int64 {
+	var n *int64
+	var m int64
+	if recordsDataIsNull(records, row, colum) {
+		return nil
+	}
+	m = *records[row][colum].LongValue
 	n = &m
 	return n
 }

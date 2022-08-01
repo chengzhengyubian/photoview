@@ -89,7 +89,7 @@ func (fd *FaceDetector) ReloadFacesFromDatabase(db *gorm.DB) error {
 
 // DetectFaces finds the faces in the given image and saves them to the database
 func (fd *FaceDetector) DetectFaces(db *gorm.DB, media *models.Media) error {
-	if err := db.Model(media).Preload("MediaURL").First(&media).Error; err != nil {
+	if err := db.Model(media).Preload("MediaURL").First(&media).Error; err != nil { //SELECT * FROM `media` WHERE `media`.`id` = 97 ORDER BY `media`.`id` LIMIT 1
 		return err
 	}
 

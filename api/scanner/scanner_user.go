@@ -3,11 +3,6 @@ package scanner
 import (
 	"bufio"
 	"container/list"
-	"io/ioutil"
-	"log"
-	"os"
-	"path"
-
 	"github.com/photoview/photoview/api/graphql/models"
 	"github.com/photoview/photoview/api/scanner/scanner_cache"
 	"github.com/photoview/photoview/api/scanner/scanner_tasks/cleanup_tasks"
@@ -16,6 +11,10 @@ import (
 	"github.com/pkg/errors"
 	ignore "github.com/sabhiram/go-gitignore"
 	"gorm.io/gorm"
+	"io/ioutil"
+	"log"
+	"os"
+	"path"
 )
 
 func getPhotoviewIgnore(ignorePath string) ([]string, error) {
@@ -43,6 +42,7 @@ func getPhotoviewIgnore(ignorePath string) ([]string, error) {
 	return photoviewIgnore, scanner.Err()
 }
 
+//修改中
 func FindAlbumsForUser(db *gorm.DB, user *models.User, album_cache *scanner_cache.AlbumScannerCache) ([]*models.Album, []error) {
 
 	if err := user.FillAlbums(db); err != nil {
@@ -58,7 +58,41 @@ func FindAlbumsForUser(db *gorm.DB, user *models.User, album_cache *scanner_cach
 	if err := db.Where("id IN (?)", userAlbumIDs).Where("parent_album_id IS NULL OR parent_album_id NOT IN (?)", userAlbumIDs).Find(&userRootAlbums).Error; err != nil {
 		return nil, []error{err}
 	}
-
+	//
+	//userAlbumid, err := json.Marshal(userAlbumIDs)
+	//if err != nil {
+	//	fmt.Print(err)
+	//}
+	//userAlbumids := strings.Trim(string(userAlbumid), "[]")
+	//sql_albums_se := "SELECT * FROM `albums` WHERE id IN (" + userAlbumids + ") AND (parent_album_id IS NULL OR parent_album_id NOT IN (" + userAlbumids + "))"
+	//dataApi, _ := DataApi.NewDataApiClient()
+	//res, err := dataApi.Query(sql_albums_se)
+	//num := len(res)
+	//if num == 0 {
+	//	return nil, []error{err}
+	//}
+	//for i := 0; i < num; i++ {
+	//	var userRootAlbum models.Album
+	//	userRootAlbum.ID = int(*res[i][0].LongValue)
+	//	userRootAlbum.CreatedAt = time.Unix(*res[i][1].LongValue/1000, 0)
+	//	userRootAlbum.UpdatedAt = time.Unix(*res[i][2].LongValue/1000, 0)
+	//	userRootAlbum.Title = *res[i][3].StringValue
+	//	if res[i][4].IsNull != nil {
+	//		userRootAlbum.ParentAlbumID = nil
+	//	} else {
+	//		id := int(*res[i][4].LongValue)
+	//		userRootAlbum.ParentAlbumID = &id
+	//	}
+	//	userRootAlbum.Path = *res[i][5].StringValue
+	//	userRootAlbum.PathHash = *res[i][6].StringValue
+	//	if res[i][7].IsNull != nil {
+	//		userRootAlbum.CoverID = nil
+	//	} else {
+	//		id := int(*res[i][7].LongValue)
+	//		userRootAlbum.CoverID = &id
+	//	}
+	//	userRootAlbums = append(userRootAlbums, &userRootAlbum)
+	//}
 	scanErrors := make([]error, 0)
 
 	type scanInfo struct {
@@ -126,7 +160,7 @@ func FindAlbumsForUser(db *gorm.DB, user *models.User, album_cache *scanner_cach
 
 			// check if album already exists
 			var albumResult []models.Album
-			result := tx.Where("path_hash = ?", models.MD5Hash(albumPath)).Find(&albumResult)
+			result := tx.Where("path_hash = ?", models.MD5Hash(albumPath)).Find(&albumResult) //SELECT * FROM `albums` WHERE path_hash = 'ede11fd45e0332cbe40cadf2d3367e43'
 			if result.Error != nil {
 				return result.Error
 			}
@@ -166,7 +200,7 @@ func FindAlbumsForUser(db *gorm.DB, user *models.User, album_cache *scanner_cach
 
 				// Add user as an owner of the album if not already
 				var userAlbumOwner []models.User
-				if err := tx.Model(&album).Association("Owners").Find(&userAlbumOwner, "user_albums.user_id = ?", user.ID); err != nil {
+				if err := tx.Model(&album).Association("Owners").Find(&userAlbumOwner, "user_albums.user_id = ?", user.ID); err != nil { //if err := tx.Model(&album).Association("Owners").Find(&userAlbumOwner, "user_albums.user_id = ?", user.ID); err != nil {
 					return err
 				}
 				if len(userAlbumOwner) == 0 {

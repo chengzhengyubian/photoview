@@ -8,6 +8,7 @@ import (
 	"gorm.io/gorm"
 )
 
+//这里注意一下
 func MyTimeline(db *gorm.DB, user *models.User, paginate *models.Pagination, onlyFavorites *bool, fromDate *time.Time) ([]*models.Media, error) {
 
 	query := db.
@@ -51,5 +52,10 @@ func MyTimeline(db *gorm.DB, user *models.User, paginate *models.Pagination, onl
 		return nil, err
 	}
 
+	//只显示喜爱
+	//SELECT `media`.`id`,`media`.`created_at`,`media`.`updated_at`,`media`.`title`,`media`.`path`,`media`.`path_hash`,`media`.`album_id`,`media`.`exif_id`,`media`.`date_shot`,`media`.`type`,`media`.`video_metadata_id`,`media`.`side_car_path`,`media`.`side_car_hash`,`media`.`blurhash` FROM `media` JOIN albums ON media.album_id = albums.id WHERE albums.id IN (SELECT user_albums.album_id FROM `user_albums` WHERE user_id = 2) AND media.date_shot < '2022-01-01 00:00:00' AND media.id IN (SELECT user_media_data.media_id FROM `user_media_data` WHERE user_media_data.user_id = 2 AND user_media_data.favorite) ORDER BY YEAR(media.date_shot) DESC,MONTH(media.date_shot) DESC,DAY(media.date_shot) DESC,albums.title ASC,TIME(media.date_shot) DESC LIMIT 200 OFFSET 1
 	return media, nil
+
+	//从今天开始
+	//SELECT `media`.`id`,`media`.`created_at`,`media`.`updated_at`,`media`.`title`,`media`.`path`,`media`.`path_hash`,`media`.`album_id`,`media`.`exif_id`,`media`.`date_shot`,`media`.`type`,`media`.`video_metadata_id`,`media`.`side_car_path`,`media`.`side_car_hash`,`media`.`blurhash` FROM `media` JOIN albums ON media.album_id = albums.id WHERE albums.id IN (SELECT user_albums.album_id FROM `user_albums` WHERE user_id = 2) ORDER BY YEAR(media.date_shot) DESC,MONTH(media.date_shot) DESC,DAY(media.date_shot) DESC,albums.title ASC,TIME(media.date_shot) DESC LIMIT 200 OFFSET 3
 }

@@ -81,7 +81,7 @@ func generateSaveThumbnailJPEG(tx *gorm.DB, media *models.Media, thumbnail_name 
 			FileSize:    fileStats.Size(),
 		}
 
-		if err := tx.Create(&mediaURL).Error; err != nil {
+		if err := tx.Create(&mediaURL).Error; err != nil { // INSERT INTO `media_urls` (`created_at`,`updated_at`,`media_id`,`media_name`,`width`,`height`,`purpose`,`content_type`,`file_size`) VALUES ('2022-08-01 20:02:32.675','2022-08-01 20:02:32.675',97,'thumbnail_截屏2022-07-13_16_40_39_png_30S5p4hZ.jpg',1024,803,'thumbnail','image/jpeg',73068)
 			return nil, errors.Wrapf(err, "could not insert thumbnail media url (%d, %s)", media.ID, thumbnail_name)
 		}
 	} else {

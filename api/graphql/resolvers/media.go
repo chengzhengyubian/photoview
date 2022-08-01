@@ -2,7 +2,10 @@ package resolvers
 
 import (
 	"context"
+	DataApi "github.com/photoview/photoview/api/dataapi"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/photoview/photoview/api/dataloader"
 	api "github.com/photoview/photoview/api/graphql"
@@ -95,9 +98,21 @@ func (r *mediaResolver) Type(ctx context.Context, media *models.Media) (models.M
 	return formattedType, nil
 }
 
+//修改完
 func (r *mediaResolver) Album(ctx context.Context, obj *models.Media) (*models.Album, error) {
 	var album models.Album
-	err := r.DB(ctx).Find(&album, obj.AlbumID).Error // SELECT * FROM `albums` WHERE `albums`.`id` = 1
+	//err := r.DB(ctx).Find(&album, obj.AlbumID).Error // SELECT * FROM `albums` WHERE `albums`.`id` = 1
+	sql_albums_se := "SELECT * FROM `albums` WHERE `albums`.`id` =" + strconv.Itoa(obj.AlbumID)
+	dataApi, _ := DataApi.NewDataApiClient()
+	res, err := dataApi.Query(sql_albums_se)
+	album.ID = DataApi.GetInt(res, 0, 0)
+	album.CreatedAt = time.Unix(*res[0][1].LongValue/1000, 0)
+	album.UpdatedAt = time.Unix(*res[0][2].LongValue/1000, 0)
+	album.Title = DataApi.GetString(res, 0, 3)
+	album.ParentAlbumID = DataApi.GetIntP(res, 0, 4)
+	album.Path = DataApi.GetString(res, 0, 5)
+	album.PathHash = DataApi.GetString(res, 0, 6)
+	album.CoverID = DataApi.GetIntP(res, 0, 7)
 	if err != nil {
 		return nil, err
 	}

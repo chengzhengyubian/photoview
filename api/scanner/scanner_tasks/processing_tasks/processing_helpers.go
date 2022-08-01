@@ -74,7 +74,7 @@ func saveOriginalPhotoToDB(tx *gorm.DB, photo *models.Media, imageData *media_en
 		FileSize:    fileStats.Size(),
 	}
 
-	if err := tx.Create(&mediaURL).Error; err != nil {
+	if err := tx.Create(&mediaURL).Error; err != nil { //INSERT INTO `media_urls` (`created_at`,`updated_at`,`media_id`,`media_name`,`width`,`height`,`purpose`,`content_type`,`file_size`) VALUES ('2022-08-01 17:28:21.117','2022-08-01 17:28:21.117',0,'自我介绍_yDPkSVVK.png',1844,1074,'original','image/png',1701845)
 		return nil, errors.Wrapf(err, "inserting original photo url: %d, %s", photo.ID, photo.Title)
 	}
 

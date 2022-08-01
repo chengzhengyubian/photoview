@@ -1,6 +1,7 @@
 package periodic_scanner
 
 import (
+	DataApi "github.com/photoview/photoview/api/dataapi"
 	"log"
 	"sync"
 	"time"
@@ -19,14 +20,21 @@ type periodicScanner struct {
 
 var mainPeriodicScanner *periodicScanner = nil
 
-func getPeriodicScanInterval(db *gorm.DB) (time.Duration, error) {
+func getPeriodicScanInterval() (time.Duration, error) {
 
 	var siteInfo models.SiteInfo
-	if err := db.First(&siteInfo).Error; err != nil { //SELECT * FROM `site_info` ORDER BY `site_info`.`initial_setup` LIMIT 1
-
+	//if err := db.First(&siteInfo).Error; err != nil { //SELECT * FROM `site_info` ORDER BY `site_info`.`initial_setup` LIMIT 1
+	//	return 0, err
+	//}
+	sql_site_info_se := "SELECT * FROM `site_info` ORDER BY `site_info`.`initial_setup` LIMIT 1"
+	dataApi, _ := DataApi.NewDataApiClient()
+	res, err := dataApi.Query(sql_site_info_se)
+	if len(res) == 0 {
 		return 0, err
 	}
-
+	siteInfo.InitialSetup = *res[0][0].BooleanValue
+	siteInfo.PeriodicScanInterval = int(*res[0][1].LongValue)
+	siteInfo.ConcurrentWorkers = int(*res[0][1].LongValue)
 	return time.Duration(siteInfo.PeriodicScanInterval) * time.Second, nil
 }
 
@@ -35,7 +43,7 @@ func InitializePeriodicScanner(db *gorm.DB) error {
 		panic("periodic scanner has already been initialized")
 	}
 
-	scanInterval, err := getPeriodicScanInterval(db)
+	scanInterval, err := getPeriodicScanInterval()
 	if err != nil {
 		return err
 	}

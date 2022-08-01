@@ -2,25 +2,41 @@ package routes
 
 import (
 	"fmt"
-	"net/http"
-
+	DataApi "github.com/photoview/photoview/api/dataapi"
 	"github.com/photoview/photoview/api/graphql/auth"
 	"github.com/photoview/photoview/api/graphql/models"
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
+	"net/http"
+	"time"
 )
 
+//修改中，未改完
 func authenticateMedia(media *models.Media, db *gorm.DB, r *http.Request) (success bool, responseMessage string, responseStatus int, errorMessage error) {
 	user := auth.UserFromContext(r.Context())
 
 	if user != nil {
 		var album models.Album
-		if err := db.First(&album, media.AlbumID).Error; err != nil { //SELECT * FROM `albums` WHERE `albums`.`id` = 1 ORDER BY `albums`.`id` LIMIT 1
+		//if err := db.First(&album, media.AlbumID).Error; err != nil { //SELECT * FROM `albums` WHERE `albums`.`id` = 1 ORDER BY `albums`.`id` LIMIT 1
+		//	return false, "internal server error", http.StatusInternalServerError, err
+		//}
+		sql_albums_se := "SELECT * FROM `albums` WHERE `albums`.`id` = 1 ORDER BY `albums`.`id` LIMIT 1"
+		dataApi, _ := DataApi.NewDataApiClient()
+		res, err := dataApi.Query(sql_albums_se)
+		if len(res) == 0 {
 			return false, "internal server error", http.StatusInternalServerError, err
 		}
+		album.ID = DataApi.GetInt(res, 0, 0)
+		album.CreatedAt = time.Unix(*res[0][1].LongValue/1000, 0)
+		album.UpdatedAt = time.Unix(*res[0][2].LongValue/1000, 0)
+		album.Title = DataApi.GetString(res, 0, 3)
+		album.ParentAlbumID = DataApi.GetIntP(res, 0, 4)
+		album.Path = DataApi.GetString(res, 0, 5)
+		album.PathHash = DataApi.GetString(res, 0, 6)
+		album.CoverID = DataApi.GetIntP(res, 0, 7)
 
-		ownsAlbum, err := user.OwnsAlbum(db, &album)
+		ownsAlbum, err := user.OwnsAlbum(db, &album) //这里注意一下，这里还没改
 		if err != nil {
 			return false, "internal server error", http.StatusInternalServerError, err
 		}
@@ -69,10 +85,25 @@ func shareTokenFromRequest(db *gorm.DB, r *http.Request, mediaID *int, albumID *
 
 	var shareToken models.ShareToken
 
-	if err := db.Where("value = ?", token).First(&shareToken).Error; err != nil {
+	//if err := db.Where("value = ?", token).First(&shareToken).Error; err != nil {
+	//	return false, "internal server error", http.StatusInternalServerError, err
+	//}
+	sql_share_tokens_se := "select * from  share_tokens where share_tokens.value=\"" + token + "\" order by share_tokens.id limit 1"
+	dataApi, _ := DataApi.NewDataApiClient()
+	res, err := dataApi.Query(sql_share_tokens_se)
+	if err != nil {
 		return false, "internal server error", http.StatusInternalServerError, err
 	}
-
+	shareToken.ID = DataApi.GetInt(res, 0, 0)
+	shareToken.CreatedAt = time.Unix(DataApi.GetLong(res, 0, 1)/1000, 0)
+	shareToken.UpdatedAt = time.Unix(DataApi.GetLong(res, 0, 2)/1000, 0)
+	shareToken.Value = DataApi.GetString(res, 0, 3)
+	shareToken.OwnerID = DataApi.GetInt(res, 0, 4)
+	Time := time.Unix(DataApi.GetLong(res, 0, 5)/1000, 0)
+	shareToken.Expire = &Time
+	shareToken.Password = DataApi.GetStringP(res, 0, 6)
+	shareToken.AlbumID = DataApi.GetIntP(res, 0, 7)
+	shareToken.MediaID = DataApi.GetIntP(res, 0, 8)
 	// Validate share token password, if set
 	if shareToken.Password != nil {
 		tokenPasswordCookie, err := r.Cookie(fmt.Sprintf("share-token-pw-%s", shareToken.Value))

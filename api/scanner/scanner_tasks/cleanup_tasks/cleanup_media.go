@@ -30,7 +30,7 @@ func CleanupMedia(db *gorm.DB, albumId int, albumMedia []*models.Media) []error 
 		query = query.Where("NOT id IN (?)", albumMediaIds)
 	}
 
-	if err := query.Find(&mediaList).Error; err != nil {
+	if err := query.Find(&mediaList).Error; err != nil { //SELECT * FROM `media` WHERE album_id = 146 AND NOT id IN (97)
 		return []error{errors.Wrap(err, "get media files to be deleted from database")}
 	}
 
@@ -49,7 +49,7 @@ func CleanupMedia(db *gorm.DB, albumId int, albumMedia []*models.Media) []error 
 	}
 
 	if len(mediaIDs) > 0 {
-		if err := db.Where("id IN (?)", mediaIDs).Delete(models.Media{}).Error; err != nil {
+		if err := db.Where("id IN (?)", mediaIDs).Delete(models.Media{}).Error; err != nil { //DELETE FROM `media` WHERE id IN (96)
 			deleteErrors = append(deleteErrors, errors.Wrap(err, "delete old media from database"))
 		}
 
@@ -86,7 +86,7 @@ func DeleteOldUserAlbums(db *gorm.DB, scannedAlbums []*models.Album, user *model
 		Where("user_id = ?", user.ID).
 		Where("album_id NOT IN (?)", scannedAlbumIDs)
 
-	if err := query.Find(&deleteAlbums).Error; err != nil {
+	if err := query.Find(&deleteAlbums).Error; err != nil { //SELECT albums.* FROM `user_albums` JOIN albums ON user_albums.album_id = albums.id WHERE user_id = 10 AND album_id NOT IN (146)
 		return []error{errors.Wrap(err, "get albums to be deleted from database")}
 	}
 
