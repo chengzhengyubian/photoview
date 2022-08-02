@@ -118,7 +118,7 @@ func (r *albumResolver) Owner(ctx context.Context, obj *models.Album) (*models.U
 func (r *albumResolver) Shares(ctx context.Context, album *models.Album) ([]*models.ShareToken, error) {
 
 	var shareTokens []*models.ShareToken
-	if err := r.DB(ctx).Where("album_id = ?", album.ID).Find(&shareTokens).Error; err != nil {
+	if err := r.DB(ctx).Where("album_id = ?", album.ID).Find(&shareTokens).Error; err != nil { //SELECT * FROM `share_tokens` WHERE album_id = 146
 		return nil, err
 	}
 

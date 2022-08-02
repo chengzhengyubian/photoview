@@ -199,7 +199,8 @@ func FindAlbumsForUser(db *gorm.DB, user *models.User, album_cache *scanner_cach
 				album = &albumResult[0]
 
 				// Add user as an owner of the album if not already
-				var userAlbumOwner []models.User
+				var userAlbumOwner []models.User /*SELECT `users`.`id`,`users`.`created_at`,`users`.`updated_at`,`users`.`username`,`users`.`password`,`users`.`admin` FROM `users` JOIN `user_albums` ON `user_albums`.`user_id` = `users`.`id` AN
+				D `user_albums`.`album_id` = 146 WHERE user_albums.user_id = 24*/
 				if err := tx.Model(&album).Association("Owners").Find(&userAlbumOwner, "user_albums.user_id = ?", user.ID); err != nil { //if err := tx.Model(&album).Association("Owners").Find(&userAlbumOwner, "user_albums.user_id = ?", user.ID); err != nil {
 					return err
 				}

@@ -27,7 +27,7 @@ func TestAlbumPath(t *testing.T) {
 
 	assert.NoError(t, db.Save(&album).Error)
 
-	user, err := models.RegisterUser(db, "user", nil, false)
+	user, err := models.RegisterUser("user", nil, false)
 	assert.NoError(t, err)
 
 	db.Model(&user).Association("Albums").Append(album.ParentAlbum.ParentAlbum)
@@ -141,7 +141,7 @@ func TestAlbumCover(t *testing.T) {
 	}
 
 	user_pass := "password"
-	regularUser, err := models.RegisterUser(db, "user1", &user_pass, false)
+	regularUser, err := models.RegisterUser("user1", &user_pass, false)
 	if !assert.NoError(t, err) {
 		return
 	}

@@ -2,8 +2,11 @@ package processing_tasks
 
 import (
 	"fmt"
+	DataApi "github.com/photoview/photoview/api/dataapi"
 	"os"
 	"path"
+	"strconv"
+	"time"
 
 	"github.com/photoview/photoview/api/graphql/models"
 	"github.com/photoview/photoview/api/scanner/media_encoding"
@@ -13,18 +16,59 @@ import (
 	"gorm.io/gorm"
 )
 
+//修改完
 // Higher order function used to check if MediaURL for a given MediaPurpose exists
 func makePhotoURLChecker(tx *gorm.DB, mediaID int) func(purpose models.MediaPurpose) (*models.MediaURL, error) {
 	return func(purpose models.MediaPurpose) (*models.MediaURL, error) {
 		var mediaURL []*models.MediaURL
 		// SELECT * FROM `media_urls` WHERE purpose = 'high-res' AND media_id = 2
-		result := tx.Where("purpose = ?", purpose).Where("media_id = ?", mediaID).Find(&mediaURL) //SELECT * FROM `media_urls` WHERE purpose = 'original' AND media_id = 2
-
-		if result.Error != nil {
-			return nil, result.Error
+		//result := tx.Where("purpose = ?", purpose).Where("media_id = ?", mediaID).Find(&mediaURL) //SELECT * FROM `media_urls` WHERE purpose = 'original' AND media_id = 2
+		var pur string
+		switch purpose {
+		case models.PhotoThumbnail:
+			pur = "thumbnail"
+		case models.VideoWeb:
+			pur = "video-web"
+		case models.VideoThumbnail:
+			pur = "video-thumbnail"
+		case models.MediaOriginal:
+			pur = "original"
+		case models.PhotoHighRes:
+			pur = "high-res"
 		}
-
-		if result.RowsAffected > 0 {
+		sql_media_urls_se := "SELECT * FROM `media_urls` WHERE purpose =\"" + pur + "\"AND media_id =" + strconv.Itoa(mediaID)
+		dataApi, _ := DataApi.NewDataApiClient()
+		res, err := dataApi.Query(sql_media_urls_se)
+		num := len(res)
+		if num == 0 {
+			return nil, err
+		}
+		for i := 0; i < num; i++ {
+			var MediaURL models.MediaURL
+			MediaURL.ID = DataApi.GetInt(res, i, 0)
+			MediaURL.CreatedAt = time.Unix(DataApi.GetLong(res, i, 1)/1000, 0)
+			MediaURL.UpdatedAt = time.Unix(DataApi.GetLong(res, i, 2)/1000, 0)
+			MediaURL.MediaID = DataApi.GetInt(res, i, 3)
+			MediaURL.MediaName = DataApi.GetString(res, i, 4)
+			MediaURL.Width = DataApi.GetInt(res, i, 5)
+			MediaURL.Height = DataApi.GetInt(res, i, 6)
+			switch DataApi.GetString(res, i, 7) {
+			case "thumbnail":
+				MediaURL.Purpose = models.PhotoThumbnail
+			case "high-res":
+				MediaURL.Purpose = models.PhotoHighRes
+			case "original":
+				MediaURL.Purpose = models.MediaOriginal
+			case "video-web":
+				MediaURL.Purpose = models.VideoWeb
+			case "video-thumbnail":
+				MediaURL.Purpose = models.VideoThumbnail
+			}
+			MediaURL.ContentType = DataApi.GetString(res, i, 8)
+			MediaURL.FileSize = DataApi.GetLong(res, i, 9)
+			mediaURL = append(mediaURL, &MediaURL)
+		}
+		if num > 0 {
 			return mediaURL[0], nil
 		}
 
@@ -51,6 +95,7 @@ func generateUniqueMediaName(mediaPath string) string {
 	return mediaName
 }
 
+//修改完
 func saveOriginalPhotoToDB(tx *gorm.DB, photo *models.Media, imageData *media_encoding.EncodeMediaData, photoDimensions *media_utils.PhotoDimensions) (*models.MediaURL, error) {
 	originalImageName := generateUniqueMediaName(photo.Path)
 
@@ -74,9 +119,13 @@ func saveOriginalPhotoToDB(tx *gorm.DB, photo *models.Media, imageData *media_en
 		FileSize:    fileStats.Size(),
 	}
 
-	if err := tx.Create(&mediaURL).Error; err != nil { //INSERT INTO `media_urls` (`created_at`,`updated_at`,`media_id`,`media_name`,`width`,`height`,`purpose`,`content_type`,`file_size`) VALUES ('2022-08-01 17:28:21.117','2022-08-01 17:28:21.117',0,'自我介绍_yDPkSVVK.png',1844,1074,'original','image/png',1701845)
-		return nil, errors.Wrapf(err, "inserting original photo url: %d, %s", photo.ID, photo.Title)
-	}
-
+	//if err := tx.Create(&mediaURL).Error; err != nil { //INSERT INTO `media_urls` (`created_at`,`updated_at`,`media_id`,`media_name`,`width`,`height`,`purpose`,`content_type`,`file_size`) VALUES ('2022-08-01 17:28:21.117','2022-08-01 17:28:21.117',0,'自我介绍_yDPkSVVK.png',1844,1074,'original','image/png',1701845)
+	//	return nil, errors.Wrapf(err, "inserting original photo url: %d, %s", photo.ID, photo.Title)
+	//}
+	//timestr := time.Now().Format("2006-01-02 15:04:05")
+	//"INSERT INTO `media_urls` (`created_at`,`updated_at`,`media_id`,`media_name`,`width`,`height`,`purpose`,`content_type`,`file_size`) VALUES ('2022-08-01 17:28:21.117','2022-08-01 17:28:21.117',0,'自我介绍_yDPkSVVK.png',1844,1074,'original','image/png',1701845)"
+	sql_media_urls_in := fmt.Sprintf("INSERT INTO `media_urls` (`created_at`,`updated_at`,`media_id`,`media_name`,`width`,`height`,`purpose`,`content_type`,`file_size`) VALUES (NOW(),NOW(),%v,'%v',%v,%v,'%v','%v',%v)", mediaURL.Media.ID, mediaURL.MediaName, mediaURL.Width, mediaURL.Height, mediaURL.Purpose, mediaURL.ContentType, mediaURL.FileSize)
+	dataApi, _ := DataApi.NewDataApiClient()
+	dataApi.ExecuteSQl(sql_media_urls_in)
 	return &mediaURL, nil
 }

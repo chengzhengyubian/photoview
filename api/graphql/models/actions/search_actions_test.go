@@ -13,7 +13,7 @@ import (
 func TestSearch(t *testing.T) {
 	db := test_utils.DatabaseTest(t)
 
-	user, err := models.RegisterUser(db, "user", nil, true)
+	user, err := models.RegisterUser("user", nil, true)
 	assert.NoError(t, err)
 
 	rootAlbum := models.Album{
