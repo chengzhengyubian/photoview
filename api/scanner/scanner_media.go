@@ -153,7 +153,7 @@ func ProcessSingleMedia(db *gorm.DB, media *models.Media) error {
 		return err
 	}
 
-	mediaCachePath, err := media.CachePath()
+	mediaCachePath, err := media.CachePath() //
 	if err != nil {
 		return err
 	}

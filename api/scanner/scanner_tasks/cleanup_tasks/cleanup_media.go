@@ -13,6 +13,8 @@ import (
 	"gorm.io/gorm"
 )
 
+//修改中
+
 // CleanupMedia removes media entries from the database that are no longer present on the filesystem
 func CleanupMedia(db *gorm.DB, albumId int, albumMedia []*models.Media) []error {
 	albumMediaIds := make([]int, len(albumMedia))

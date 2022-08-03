@@ -244,7 +244,7 @@ func (user *User) OwnsAlbum(db *gorm.DB, album *Album) (bool, error) {
 	return len(ownedParents) > 0, nil
 }
 
-// FavoriteMedia sets/clears a media as favorite for the user//修改完
+// FavoriteMedia sets/clears a media as favorite for the user//修改了一下
 func (user *User) FavoriteMedia(db *gorm.DB, mediaID int, favorite bool) (*Media, error) {
 	var fav int
 	if favorite == true {
@@ -252,9 +252,11 @@ func (user *User) FavoriteMedia(db *gorm.DB, mediaID int, favorite bool) (*Media
 	} else {
 		fav = 0
 	}
-	sql_user_media_data_se := "select * from user_media_data where user_id =" + strconv.Itoa(user.ID)
+	//sql_user_media_data_se := "select * from user_media_data where user_id =" + strconv.Itoa(user.ID)
+	sql_user_media_data_se := fmt.Sprintf("select * from user_media_data where user_id =%v and media_id=%v", user.ID, mediaID)
 	sql_user_media_data_in := "INSERT INTO `user_media_data` (`created_at`,`updated_at`,`user_id`,`media_id`,`favorite`) VALUES (NOW(),NOW()," + strconv.Itoa(user.ID) + "," + strconv.Itoa(mediaID) + "," + strconv.Itoa(fav) + ")"
-	sql_user_media_data_up := "UPDATE user_media_data set updated_at=NOW(),favorite=\"" + strconv.Itoa(fav) + "\"where user_id =\"" + strconv.Itoa(user.ID) + "\"and media_id =" + strconv.Itoa(mediaID)
+	//sql_user_media_data_up := "UPDATE user_media_data set updated_at=NOW(),favorite=" + strconv.Itoa(fav) + "where user_id =" + strconv.Itoa(user.ID) + "and media_id =" + strconv.Itoa(mediaID)
+	sql_user_media_data_up := fmt.Sprintf("UPDATE user_media_data set updated_at=NOW(),favorite=%v where user_id=%v and media_id=%v", fav, user.ID, mediaID)
 	dataApi, _ := DataApi.NewDataApiClient()
 	res, err := dataApi.ExecuteSQl(sql_user_media_data_se)
 	if len(res.Body.Data.Records) == 0 {

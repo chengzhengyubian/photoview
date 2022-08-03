@@ -10,7 +10,7 @@ import (
 	"gorm.io/gorm"
 )
 
-//这里注意一下
+//这里注意一下怎么修改
 func makeMediaURLLoader(db *gorm.DB, filter func(query *gorm.DB) *gorm.DB) func(keys []int) ([]*models.MediaURL, []error) {
 	return func(mediaIDs []int) ([]*models.MediaURL, []error) {
 

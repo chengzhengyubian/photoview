@@ -2,6 +2,8 @@ package resolvers
 
 import (
 	"context"
+	DataApi "github.com/photoview/photoview/api/dataapi"
+	"strconv"
 	"time"
 
 	"github.com/photoview/photoview/api/database/drivers"
@@ -30,19 +32,21 @@ func (r *mutationResolver) ScanAll(ctx context.Context) (*models.ScannerResult, 
 //修改完，未测试
 func (r *mutationResolver) ScanUser(ctx context.Context, userID int) (*models.ScannerResult, error) {
 	var user models.User
-	if err := r.DB(ctx).First(&user, userID).Error; err != nil { //SELECT * FROM `users` WHERE `users`.`id` = 2 ORDER BY `users`.`id` LIMIT 1
-		return nil, errors.Wrap(err, "get user from database")
-	}
-	//sql_users_se := "SELECT * FROM `users` WHERE `users`.`id` = " + strconv.Itoa(userID) + " ORDER BY `users`.`id` LIMIT 1"
-	//dataApi, _ := DataApi.NewDataApiClient()
-	//res, err := dataApi.Query(sql_users_se)
-	//if len(res) == 0 {
+	//if err := r.DB(ctx).First(&user, userID).Error; err != nil { //SELECT * FROM `users` WHERE `users`.`id` = 2 ORDER BY `users`.`id` LIMIT 1
 	//	return nil, errors.Wrap(err, "get user from database")
 	//}
-	//user.ID = int(*res[0][0].LongValue)
-	//user.Username = *res[0][3].StringValue
-	//user.Password = res[0][4].StringValue
-	//user.Admin = *res[0][5].BooleanValue
+	sql_users_se := "SELECT * FROM `users` WHERE `users`.`id` = " + strconv.Itoa(userID) + " ORDER BY `users`.`id` LIMIT 1"
+	dataApi, _ := DataApi.NewDataApiClient()
+	res, err := dataApi.Query(sql_users_se)
+	if len(res) == 0 {
+		return nil, errors.Wrap(err, "get user from database")
+	}
+	user.ID = int(*res[0][0].LongValue)
+	//user.CreatedAt=time.Unix(DataApi.GetLong(res,0,1)/1000,0)
+	//user.UpdatedAt=time.Unix(DataApi.GetLong(res,0,2)/1000,0)
+	user.Username = *res[0][3].StringValue
+	user.Password = res[0][4].StringValue
+	user.Admin = *res[0][5].BooleanValue
 	scanner_queue.AddUserToQueue(&user)
 
 	startMessage := "Scanner started"

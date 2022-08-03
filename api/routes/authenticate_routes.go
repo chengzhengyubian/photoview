@@ -12,7 +12,7 @@ import (
 	"time"
 )
 
-//修改中，未改完
+//修改中，未改完，还一个函数未改
 func authenticateMedia(media *models.Media, db *gorm.DB, r *http.Request) (success bool, responseMessage string, responseStatus int, errorMessage error) {
 	user := auth.UserFromContext(r.Context())
 
@@ -76,6 +76,7 @@ func authenticateAlbum(album *models.Album, db *gorm.DB, r *http.Request) (succe
 	return true, "success", http.StatusAccepted, nil
 }
 
+//修改完
 func shareTokenFromRequest(db *gorm.DB, r *http.Request, mediaID *int, albumID *int) (success bool, responseMessage string, responseStatus int, errorMessage error) {
 	// Check if photo is authorized with a share token
 	token := r.URL.Query().Get("token")
@@ -134,19 +135,24 @@ func shareTokenFromRequest(db *gorm.DB, r *http.Request, mediaID *int, albumID *
 		// Check child albums
 
 		var count int
-		err := db.Raw(`
-				WITH recursive child_albums AS (
-					SELECT * FROM albums WHERE parent_album_id = ?
-					UNION ALL
-					SELECT child.* FROM albums child JOIN child_albums parent ON parent.id = child.parent_album_id
-				)
-				SELECT COUNT(id) FROM child_albums WHERE id = ?
-			`, *shareToken.AlbumID, albumID).Find(&count).Error
+		//err := db.Raw(`
+		//		WITH recursive child_albums AS (
+		//			SELECT * FROM albums WHERE parent_album_id = ?
+		//			UNION ALL
+		//			SELECT child.* FROM albums child JOIN child_albums parent ON parent.id = child.parent_album_id
+		//		)
+		//		SELECT COUNT(id) FROM child_albums WHERE id = ?
+		//	`, *shareToken.AlbumID, albumID).Find(&count).Error
 
+		//if err != nil {
+		//	return false, "internal server error", http.StatusInternalServerError, err
+		//}
+		sql_albums_se := fmt.Sprintf("WITH recursive child_albums AS (SELECT * FROM albums WHERE parent_album_id = %v UNION ALL SELECT child.* FROM albums child JOIN child_albums parent ON parent.id = child.parent_album_id)SELECT COUNT(id) FROM child_albums WHERE id =%v", *shareToken.AlbumID, albumID)
+		res, err = dataApi.Query(sql_albums_se)
 		if err != nil {
 			return false, "internal server error", http.StatusInternalServerError, err
 		}
-
+		count = DataApi.GetInt(res, 0, 0)
 		if count == 0 {
 			return false, "unauthorized", http.StatusForbidden, errors.New("no child albums found for share token")
 		}
