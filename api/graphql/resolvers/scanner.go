@@ -2,6 +2,7 @@ package resolvers
 
 import (
 	"context"
+	"fmt"
 	DataApi "github.com/photoview/photoview/api/dataapi"
 	"strconv"
 	"time"
@@ -11,7 +12,6 @@ import (
 	"github.com/photoview/photoview/api/scanner/periodic_scanner"
 	"github.com/photoview/photoview/api/scanner/scanner_queue"
 	"github.com/pkg/errors"
-	"gorm.io/gorm"
 )
 
 func (r *mutationResolver) ScanAll(ctx context.Context) (*models.ScannerResult, error) {
@@ -57,44 +57,71 @@ func (r *mutationResolver) ScanUser(ctx context.Context, userID int) (*models.Sc
 	}, nil
 }
 
+//修改完，未测试
 func (r *mutationResolver) SetPeriodicScanInterval(ctx context.Context, interval int) (int, error) {
-	db := r.DB(ctx)
+	//db := r.DB(ctx)
 	if interval < 0 {
 		return 0, errors.New("interval must be 0 or above")
 	}
 
-	if err := db.Session(&gorm.Session{AllowGlobalUpdate: true}).Model(&models.SiteInfo{}).Update("periodic_scan_interval", interval).Error; err != nil {
-		return 0, err
-	}
-
+	//全局更新
+	//if err := db.Session(&gorm.Session{AllowGlobalUpdate: true}).Model(&models.SiteInfo{}).Update("periodic_scan_interval", interval).Error; err != nil {
+	//	return 0, err
+	//}
+	//这里注意一下
+	sql_site_info_up := fmt.Sprintf("update site_info set periodic_scan_interval=%v", interval)
+	dataApi, _ := DataApi.NewDataApiClient()
+	dataApi.ExecuteSQl(sql_site_info_up)
 	var siteInfo models.SiteInfo
-	if err := db.First(&siteInfo).Error; err != nil {
+	//if err := db.First(&siteInfo).Error; err != nil {
+	//	return 0, err
+	//}
+	sql_site_info_se := fmt.Sprintf("select * from site_info limit 1")
+	res, err := dataApi.Query(sql_site_info_se)
+	if len(res) == 0 {
 		return 0, err
 	}
-
+	siteInfo.InitialSetup = DataApi.GetBoolean(res, 0, 0)
+	siteInfo.PeriodicScanInterval = DataApi.GetInt(res, 0, 1)
+	siteInfo.ConcurrentWorkers = DataApi.GetInt(res, 0, 2)
 	periodic_scanner.ChangePeriodicScanInterval(time.Duration(siteInfo.PeriodicScanInterval) * time.Second)
 
 	return siteInfo.PeriodicScanInterval, nil
 }
 
+//修改完，未测试
 func (r *mutationResolver) SetScannerConcurrentWorkers(ctx context.Context, workers int) (int, error) {
-	db := r.DB(ctx)
+	//db := r.DB(ctx)
 	if workers < 1 {
 		return 0, errors.New("concurrent workers must at least be 1")
 	}
 
+	//注意一下
 	if workers > 1 && drivers.DatabaseDriverFromEnv() == drivers.SQLITE {
 		return 0, errors.New("multiple workers not supported for SQLite databases")
 	}
 
-	if err := db.Session(&gorm.Session{AllowGlobalUpdate: true}).Model(&models.SiteInfo{}).Update("concurrent_workers", workers).Error; err != nil {
-		return 0, err
-	}
+	//if err := db.Session(&gorm.Session{AllowGlobalUpdate: true}).Model(&models.SiteInfo{}).Update("concurrent_workers", workers).Error; err != nil {
+	//	return 0, err
+	//}
+
+	sql_site_info_up := fmt.Sprintf("update site_info set concurrent_workers=%v", workers)
+	dataApi, _ := DataApi.NewDataApiClient()
+	dataApi.ExecuteSQl(sql_site_info_up)
 
 	var siteInfo models.SiteInfo
-	if err := db.First(&siteInfo).Error; err != nil {
+	//if err := db.First(&siteInfo).Error; err != nil {
+	//	return 0, err
+	//}
+
+	sql_site_info_se := fmt.Sprintf("select * from site_info limit 1")
+	res, err := dataApi.Query(sql_site_info_se)
+	if len(res) == 0 {
 		return 0, err
 	}
+	siteInfo.InitialSetup = DataApi.GetBoolean(res, 0, 0)
+	siteInfo.PeriodicScanInterval = DataApi.GetInt(res, 0, 1)
+	siteInfo.ConcurrentWorkers = DataApi.GetInt(res, 0, 2)
 
 	scanner_queue.ChangeScannerConcurrentWorkers(siteInfo.ConcurrentWorkers)
 

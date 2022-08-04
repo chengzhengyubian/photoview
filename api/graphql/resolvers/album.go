@@ -11,7 +11,6 @@ import (
 	"github.com/photoview/photoview/api/graphql/models"
 	"github.com/photoview/photoview/api/graphql/models/actions"
 	"github.com/pkg/errors"
-	"gorm.io/gorm"
 )
 
 func (r *queryResolver) MyAlbums(ctx context.Context, order *models.Ordering, paginate *models.Pagination, onlyRoot *bool, showEmpty *bool, onlyWithFavorites *bool) ([]*models.Album, error) {
@@ -37,7 +36,10 @@ func (r *queryResolver) Album(ctx context.Context, id int, tokenCredentials *mod
 				return shareToken.Album, nil
 			}
 
-			subAlbum, err := shareToken.Album.GetChildren(db, func(query *gorm.DB) *gorm.DB { return query.Where("sub_albums.id = ?", id) }) //这里注意一下
+			subAlbum, err := shareToken.Album.GetChildren(db, func(sql string) string {
+				//return query.Where("sub_albums.id = ?", id)
+				return sql + fmt.Sprintf(" where sub_albums.id =%v", id)
+			}) //这里注意一下
 			if err != nil {
 				return nil, errors.Wrapf(err, "find sub album of share token (%s)", tokenCredentials.Token)
 			}
@@ -62,30 +64,34 @@ func (r *Resolver) Album() api.AlbumResolver {
 
 type albumResolver struct{ *Resolver }
 
-//修改完，未测试
+//修改完，测试还有点小问题
 func (r *albumResolver) Media(ctx context.Context, album *models.Album, order *models.Ordering, paginate *models.Pagination, onlyFavorites *bool) ([]*models.Media, error) {
 	//db := r.DB(ctx)
-	//
+
 	//query := db.
 	//	Where("media.album_id = ?", album.ID).
 	//	Where("media.id IN (?)", db.Model(&models.MediaURL{}).Select("media_urls.media_id").Where("media_urls.media_id = media.id"))
+	var orderby string
+	var limit, offset int
+	orderby = *order.OrderBy
+	limit = *paginate.Limit
+	offset = *paginate.Offset
 	var sql_media_se string
 	if onlyFavorites != nil && *onlyFavorites == true {
 		user := auth.UserFromContext(ctx)
 		if user == nil {
 			return nil, errors.New("cannot get favorite media without being authorized")
 		}
-
+		//
 		//favoriteQuery := db.Model(&models.UserMediaData{
 		//	UserID: user.ID,
 		//}).Where("user_media_data.media_id = media.id").Where("user_media_data.favorite = true")
 		//
 		//query = query.Where("EXISTS (?)", favoriteQuery)
-		sql_media_se = fmt.Sprintf("SELECT * FROM `media` WHERE media.album_id = %v AND media.id IN (SELECT media_urls.media_id FROM `media_urls` WHERE media_urls.media_id = media.id) AND EXISTS (SELECT * FROM `user_media_data` WHERE user_media_data.media_id = media.id AND user_media_data.favorite = true AND `user_media_data`.`user_id` = %v) ORDER BY `%v` LIMIT %v OFFSET %v", album.ID, user.ID, order.OrderBy, paginate.Limit, paginate.Offset)
+		sql_media_se = fmt.Sprintf("SELECT * FROM `media` WHERE media.album_id = %v AND media.id IN (SELECT media_urls.media_id FROM `media_urls` WHERE media_urls.media_id = media.id) AND EXISTS (SELECT * FROM `user_media_data` WHERE user_media_data.media_id = media.id AND user_media_data.favorite = true AND `user_media_data`.`user_id` = %v) ORDER BY `%v` LIMIT %v OFFSET %v", album.ID, user.ID, orderby, limit, offset)
 	} else {
-		sql_media_se = fmt.Sprintf("SELECT * FROM `media` WHERE media.album_id = %v AND media.id IN (SELECT media_urls.media_id FROM `media_urls` WHERE media_urls.media_id = media.id) ORDER BY `%v` LIMIT %v", album.ID, order.OrderBy, paginate.Limit)
+		sql_media_se = fmt.Sprintf("SELECT * FROM `media` WHERE media.album_id = %v AND media.id IN (SELECT media_urls.media_id FROM `media_urls` WHERE media_urls.media_id = media.id) ORDER BY `%v` LIMIT %v", album.ID, orderby, limit)
 	}
-
 	//query = models.FormatSQL(query, order, paginate)
 
 	var media []*models.Media
@@ -95,7 +101,7 @@ func (r *albumResolver) Media(ctx context.Context, album *models.Album, order *m
 	// SELECT * FROM `media` WHERE media.album_id = 146 AND media.id IN (SELECT media_urls.media_id FROM `media_urls` WHERE media_urls.media_id = media.id) AND EXISTS (SELECT * FROM `user_media_data` WHERE user_media_data.media_id = media.id AND user_media_data.favorite = true AND `user_media_data`.`user_id` = 10) ORDER BY `date_shot` LIMIT 200 OFFSET 1
 	dataApi, _ := DataApi.NewDataApiClient()
 	res, err := dataApi.Query(sql_media_se)
-	if err != nil {
+	if len(res) == 0 {
 		return nil, err
 	}
 	num := len(res)
@@ -139,13 +145,18 @@ func (r *albumResolver) SubAlbums(ctx context.Context, parent *models.Album, ord
 	//if err := query.Find(&albums).Error; err != nil { //SELECT * FROM `albums` WHERE parent_album_id = 1 ORDER BY `title`
 	//	return nil, err
 	//}
-	sql_albums_se := fmt.Sprintf("SELECT * FROM `albums` WHERE parent_album_id =%v ORDER BY '%v'", parent.ID, order.OrderBy)
+	var orderby string
+	orderby = *order.OrderBy
+	sql_albums_se := fmt.Sprintf("SELECT * FROM `albums` WHERE parent_album_id =%v ORDER BY '%v'", parent.ID, orderby)
 	dataApi, _ := DataApi.NewDataApiClient()
 	res, err := dataApi.Query(sql_albums_se)
 	if err != nil {
 		return nil, err
 	}
 	num := len(res)
+	if len(res) == 0 {
+		return nil, err
+	}
 	for i := 0; i < num; i++ {
 		var album models.Album
 		album.ID = int(*res[i][0].LongValue)
@@ -183,6 +194,9 @@ func (r *albumResolver) Shares(ctx context.Context, album *models.Album) ([]*mod
 		return nil, err
 	}
 	num := len(res)
+	if len(res) == 0 {
+		return nil, err
+	}
 	for i := 0; i < num; i++ {
 		var shareToken models.ShareToken
 		shareToken.ID = DataApi.GetInt(res, i, 0)

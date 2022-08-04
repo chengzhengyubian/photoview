@@ -219,7 +219,7 @@ func TestAlbumsSingleRootExpand(t *testing.T) {
 	err := db.Create(&unrelatedAlbum).Error
 	assert.NoError(t, err)
 
-	user, err := models.RegisterUser(db, "user", nil, false)
+	user, err := models.RegisterUser("user", nil, false)
 	assert.NoError(t, err)
 
 	rootAlbum := models.Album{

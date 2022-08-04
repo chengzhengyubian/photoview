@@ -10,7 +10,7 @@ import (
 	"gorm.io/gorm"
 )
 
-//修改完，未测试
+//修改完，测试成功
 func MyTimeline(db *gorm.DB, user *models.User, paginate *models.Pagination, onlyFavorites *bool, fromDate *time.Time) ([]*models.Media, error) {
 
 	query := db.

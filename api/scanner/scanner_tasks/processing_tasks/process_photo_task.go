@@ -70,7 +70,7 @@ func (t ProcessPhotoTask) ProcessMedia(ctx scanner_task.TaskContext, mediaData *
 			highresName := generateUniqueMediaNamePrefixed("highres", photo.Path, ".jpg")
 			baseImagePath = path.Join(mediaCachePath, highresName)
 
-			highRes, err := generateSaveHighResJPEG(ctx.GetDB(), photo, mediaData, highresName, baseImagePath, nil)
+			highRes, err := generateSaveHighResJPEG(photo, mediaData, highresName, baseImagePath, nil)
 			if err != nil {
 				return []*models.MediaURL{}, err
 			}
@@ -114,7 +114,7 @@ func (t ProcessPhotoTask) ProcessMedia(ctx scanner_task.TaskContext, mediaData *
 	// Save thumbnail to cache
 	if thumbURL == nil {
 		thumbnailName := generateUniqueMediaNamePrefixed("thumbnail", photo.Path, ".jpg")
-		thumbnail, err := generateSaveThumbnailJPEG(ctx.GetDB(), photo, thumbnailName, mediaCachePath, baseImagePath, nil)
+		thumbnail, err := generateSaveThumbnailJPEG(photo, thumbnailName, mediaCachePath, baseImagePath, nil)
 		if err != nil {
 			return []*models.MediaURL{}, err
 		}

@@ -25,6 +25,7 @@ func (r *queryResolver) MyMedia(ctx context.Context, order *models.Ordering, pag
 	return actions.MyMedia(r.DB(ctx), user, order, paginate)
 }
 
+//未修改
 func (r *queryResolver) Media(ctx context.Context, id int, tokenCredentials *models.ShareTokenCredentials) (*models.Media, error) {
 	db := r.DB(ctx)
 	if tokenCredentials != nil {
@@ -60,6 +61,7 @@ func (r *queryResolver) Media(ctx context.Context, id int, tokenCredentials *mod
 	return &media, nil
 }
 
+//未修改
 func (r *queryResolver) MediaList(ctx context.Context, ids []int) ([]*models.Media, error) {
 	db := r.DB(ctx)
 	user := auth.UserFromContext(ctx)
@@ -119,6 +121,7 @@ func (r *mediaResolver) Album(ctx context.Context, obj *models.Media) (*models.A
 	return &album, nil
 }
 
+//未修改
 func (r *mediaResolver) Shares(ctx context.Context, media *models.Media) ([]*models.ShareToken, error) {
 	var shareTokens []*models.ShareToken
 	if err := r.DB(ctx).Where("media_id = ?", media.ID).Find(&shareTokens).Error; err != nil {
@@ -128,6 +131,7 @@ func (r *mediaResolver) Shares(ctx context.Context, media *models.Media) ([]*mod
 	return shareTokens, nil
 }
 
+//未修改
 func (r *mediaResolver) Downloads(ctx context.Context, media *models.Media) ([]*models.MediaDownload, error) {
 
 	var mediaUrls []*models.MediaURL

@@ -3,6 +3,9 @@ package scanner
 import (
 	"bufio"
 	"container/list"
+	"encoding/json"
+	"fmt"
+	DataApi "github.com/photoview/photoview/api/dataapi"
 	"github.com/photoview/photoview/api/graphql/models"
 	"github.com/photoview/photoview/api/scanner/scanner_cache"
 	"github.com/photoview/photoview/api/scanner/scanner_tasks/cleanup_tasks"
@@ -15,6 +18,8 @@ import (
 	"log"
 	"os"
 	"path"
+	"strings"
+	"time"
 )
 
 func getPhotoviewIgnore(ignorePath string) ([]string, error) {
@@ -55,44 +60,44 @@ func FindAlbumsForUser(db *gorm.DB, user *models.User, album_cache *scanner_cach
 	}
 
 	var userRootAlbums []*models.Album //SELECT * FROM `albums` WHERE id IN (1) AND (parent_album_id IS NULL OR parent_album_id NOT IN (1))
-	if err := db.Where("id IN (?)", userAlbumIDs).Where("parent_album_id IS NULL OR parent_album_id NOT IN (?)", userAlbumIDs).Find(&userRootAlbums).Error; err != nil {
-		return nil, []error{err}
-	}
-	//
-	//userAlbumid, err := json.Marshal(userAlbumIDs)
-	//if err != nil {
-	//	fmt.Print(err)
-	//}
-	//userAlbumids := strings.Trim(string(userAlbumid), "[]")
-	//sql_albums_se := "SELECT * FROM `albums` WHERE id IN (" + userAlbumids + ") AND (parent_album_id IS NULL OR parent_album_id NOT IN (" + userAlbumids + "))"
-	//dataApi, _ := DataApi.NewDataApiClient()
-	//res, err := dataApi.Query(sql_albums_se)
-	//num := len(res)
-	//if num == 0 {
+	//if err := db.Where("id IN (?)", userAlbumIDs).Where("parent_album_id IS NULL OR parent_album_id NOT IN (?)", userAlbumIDs).Find(&userRootAlbums).Error; err != nil {
 	//	return nil, []error{err}
 	//}
-	//for i := 0; i < num; i++ {
-	//	var userRootAlbum models.Album
-	//	userRootAlbum.ID = int(*res[i][0].LongValue)
-	//	userRootAlbum.CreatedAt = time.Unix(*res[i][1].LongValue/1000, 0)
-	//	userRootAlbum.UpdatedAt = time.Unix(*res[i][2].LongValue/1000, 0)
-	//	userRootAlbum.Title = *res[i][3].StringValue
-	//	if res[i][4].IsNull != nil {
-	//		userRootAlbum.ParentAlbumID = nil
-	//	} else {
-	//		id := int(*res[i][4].LongValue)
-	//		userRootAlbum.ParentAlbumID = &id
-	//	}
-	//	userRootAlbum.Path = *res[i][5].StringValue
-	//	userRootAlbum.PathHash = *res[i][6].StringValue
-	//	if res[i][7].IsNull != nil {
-	//		userRootAlbum.CoverID = nil
-	//	} else {
-	//		id := int(*res[i][7].LongValue)
-	//		userRootAlbum.CoverID = &id
-	//	}
-	//	userRootAlbums = append(userRootAlbums, &userRootAlbum)
-	//}
+	//
+	userAlbumid, err := json.Marshal(userAlbumIDs)
+	if err != nil {
+		fmt.Print(err)
+	}
+	userAlbumids := strings.Trim(string(userAlbumid), "[]")
+	sql_albums_se := "SELECT * FROM `albums` WHERE id IN (" + userAlbumids + ") AND (parent_album_id IS NULL OR parent_album_id NOT IN (" + userAlbumids + "))"
+	dataApi, _ := DataApi.NewDataApiClient()
+	res, err := dataApi.Query(sql_albums_se)
+	num := len(res)
+	if num == 0 {
+		return nil, []error{err}
+	}
+	for i := 0; i < num; i++ {
+		var userRootAlbum models.Album
+		userRootAlbum.ID = int(*res[i][0].LongValue)
+		userRootAlbum.CreatedAt = time.Unix(*res[i][1].LongValue/1000, 0)
+		userRootAlbum.UpdatedAt = time.Unix(*res[i][2].LongValue/1000, 0)
+		userRootAlbum.Title = *res[i][3].StringValue
+		if res[i][4].IsNull != nil {
+			userRootAlbum.ParentAlbumID = nil
+		} else {
+			id := int(*res[i][4].LongValue)
+			userRootAlbum.ParentAlbumID = &id
+		}
+		userRootAlbum.Path = *res[i][5].StringValue
+		userRootAlbum.PathHash = *res[i][6].StringValue
+		if res[i][7].IsNull != nil {
+			userRootAlbum.CoverID = nil
+		} else {
+			id := int(*res[i][7].LongValue)
+			userRootAlbum.CoverID = &id
+		}
+		userRootAlbums = append(userRootAlbums, &userRootAlbum)
+	}
 	scanErrors := make([]error, 0)
 
 	type scanInfo struct {
@@ -160,11 +165,29 @@ func FindAlbumsForUser(db *gorm.DB, user *models.User, album_cache *scanner_cach
 
 			// check if album already exists
 			var albumResult []models.Album
-			result := tx.Where("path_hash = ?", models.MD5Hash(albumPath)).Find(&albumResult) //SELECT * FROM `albums` WHERE path_hash = 'ede11fd45e0332cbe40cadf2d3367e43'
-			if result.Error != nil {
-				return result.Error
-			}
+			//result := tx.Where("path_hash = ?", models.MD5Hash(albumPath)).Find(&albumResult) //SELECT * FROM `albums` WHERE path_hash = 'ede11fd45e0332cbe40cadf2d3367e43'
+			//if result.Error != nil {
+			//	return result.Error
+			//}
 
+			sql_albums_se := fmt.Sprintf("SELECT * FROM `albums` WHERE path_hash = '%v'", models.MD5Hash(albumPath))
+			res, err := dataApi.Query(sql_albums_se)
+			if err != nil {
+				fmt.Println(err)
+			}
+			num := len(res)
+			for i := 0; i < num; i++ {
+				var Album models.Album
+				Album.ID = DataApi.GetInt(res, i, 0)
+				Album.CreatedAt = time.Unix(*res[i][1].LongValue/1000, 0)
+				Album.UpdatedAt = time.Unix(*res[i][2].LongValue/1000, 0)
+				Album.Title = DataApi.GetString(res, i, 3)
+				Album.ParentAlbumID = DataApi.GetIntP(res, i, 4)
+				Album.Path = DataApi.GetString(res, i, 5)
+				Album.PathHash = DataApi.GetString(res, i, 6)
+				Album.CoverID = DataApi.GetIntP(res, i, 7)
+				albumResult = append(albumResult, Album)
+			}
 			// album does not exist, create new
 			if len(albumResult) == 0 {
 				albumTitle := path.Base(albumPath)
@@ -174,7 +197,7 @@ func FindAlbumsForUser(db *gorm.DB, user *models.User, album_cache *scanner_cach
 				if albumParent != nil {
 					albumParentID = &albumParent.ID
 
-					if err := tx.Model(&albumParent).Association("Owners").Find(&parentOwners); err != nil {
+					if err := tx.Model(&albumParent).Association("Owners").Find(&parentOwners); err != nil { //SELECT `users`.`id`,`users`.`created_at`,`users`.`updated_at`,`users`.`username`,`users`.`password`,`users`.`admin` FROM `users` JOIN `user_albums` ON `user_albums`.`user_id` = `users`.`id` AND `user_albums`.`album_id` = 146
 						return err
 					}
 				}
@@ -188,13 +211,14 @@ func FindAlbumsForUser(db *gorm.DB, user *models.User, album_cache *scanner_cach
 				// Store album ignore
 				album_cache.InsertAlbumIgnore(albumPath, albumIgnore)
 
-				if err := tx.Create(&album).Error; err != nil {
+				if err := tx.Create(&album).Error; err != nil { //INSERT INTO `albums` (`created_at`,`updated_at`,`title`,`parent_album_id`,`path`,`path_hash`,`cover_id`) VALUES ('2022-08-04 11:18:50.179','2022-08-04 11:18:50.179','photoper',146,'/Users/chengbian/suiapp/photo/photoper','b7a64e9dd07f2c552d80d046423474f3',NULL)
 					return errors.Wrap(err, "insert album into database")
 				}
 
-				if err := tx.Model(&album).Association("Owners").Append(parentOwners); err != nil {
-					return errors.Wrap(err, "add owners to album")
-				}
+				if err := tx.Model(&album).Association("Owners").Append(parentOwners); err != nil { //INSERT INTO `users` (`created_at`,`updated_at`,`username`,`password`,`admin`,`id`) VALUES ('2022-07-27 15:23:03.793','2022-07-27 04:24:41.662','chengbian1','$2a$12$X7zkeTvJ6WB92eftdy1tzeFeGjpfZYgCS5GeoVgRwhDIn27yLPH1G',true,10),('2022-07-27 15:23:03.793','2022-08-01 09:33:28.348','cheng','$2a$12$OoQ6Yo55ezQ2gcytpaBZPuMUAakYTBTSa7pxcDqig8pMzw7XUAs9q',true,24) ON DUPLICATE KEY UPDATE `id`=`id`
+					return errors.Wrap(err, "add owners to album") //INSERT INTO `user_albums` (`album_id`,`user_id`) VALUES (148,10),(148,24) ON DUPLICATE KEY UPDATE `album_id`=`album_id`
+				} //UPDATE `albums` SET `updated_at`='2022-08-04 11:18:50.238' WHERE `id` = 148
+
 			} else {
 				album = &albumResult[0]
 

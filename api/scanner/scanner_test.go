@@ -20,7 +20,7 @@ func TestFullScan(t *testing.T) {
 	db := test_utils.DatabaseTest(t)
 
 	pass := "1234"
-	user, err := models.RegisterUser(db, "test_user", &pass, true)
+	user, err := models.RegisterUser("test_user", &pass, true)
 	if !assert.NoError(t, err) {
 		return
 	}

@@ -49,6 +49,7 @@ func InitializeFaceDetector(db *gorm.DB) error {
 	return nil
 }
 
+//未修改
 func getSamplesFromDatabase(db *gorm.DB) (samples []face.Descriptor, faceGroupIDs []int32, imageFaceIDs []int, err error) {
 
 	var imageFaces []*models.ImageFace

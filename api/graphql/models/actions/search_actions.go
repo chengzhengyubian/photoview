@@ -10,6 +10,7 @@ import (
 	"gorm.io/gorm/clause"
 )
 
+//未修改
 func Search(db *gorm.DB, query string, userID int, _limitMedia *int, _limitAlbums *int) (*models.SearchResult, error) {
 	limitMedia := 10
 	limitAlbums := 10

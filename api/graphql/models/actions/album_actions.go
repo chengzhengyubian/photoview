@@ -1,14 +1,17 @@
 package actions
 
 import (
+	"encoding/json"
 	"fmt"
 	DataApi "github.com/photoview/photoview/api/dataapi"
 	"github.com/photoview/photoview/api/graphql/models"
 	"github.com/pkg/errors"
 	"gorm.io/gorm"
+	"strings"
 	"time"
 )
 
+//修改完，未测试
 func MyAlbums(db *gorm.DB, user *models.User, order *models.Ordering, paginate *models.Pagination, onlyRoot *bool, showEmpty *bool, onlyWithFavorites *bool) ([]*models.Album, error) {
 	if err := user.FillAlbums(db); err != nil {
 		return nil, err
@@ -22,8 +25,11 @@ func MyAlbums(db *gorm.DB, user *models.User, order *models.Ordering, paginate *
 	for i, album := range user.Albums {
 		userAlbumIDs[i] = album.ID
 	}
-
-	query := db.Model(models.Album{}).Where("id IN (?)", userAlbumIDs)
+	var sql_albums_se string
+	//query := db.Model(models.Album{}).Where("id IN (?)", userAlbumIDs)
+	userAlbumID, _ := json.Marshal(userAlbumIDs)
+	userAlbumids := strings.Trim(string(userAlbumID), "[]")
+	sql_albums_se = fmt.Sprintf("select * from albums where id in (%v)", userAlbumids)
 
 	if onlyRoot != nil && *onlyRoot {
 
@@ -40,49 +46,74 @@ func MyAlbums(db *gorm.DB, user *models.User, order *models.Ordering, paginate *
 		}
 
 		if singleRootAlbumID != -1 && len(user.Albums) > 1 {
-			query = query.Where("parent_album_id = ?", singleRootAlbumID)
+			//query = query.Where("parent_album_id = ?", singleRootAlbumID)
+			sql_albums_se = sql_albums_se + fmt.Sprintf(" and parent_album_id = %v", singleRootAlbumID)
 		} else {
-			query = query.Where("parent_album_id IS NULL")
+			//query = query.Where("parent_album_id IS NULL")
+			sql_albums_se += fmt.Sprintf(" and parent_album_id IS NULL")
 		}
 	}
 
+	//这里注意一下
 	if showEmpty == nil || !*showEmpty {
-		subQuery := db.Model(&models.Media{}).Where("album_id = albums.id")
-
+		//subQuery := db.Model(&models.Media{}).Where("album_id = albums.id")
+		sub := fmt.Sprintf("select * from media where album_id = albums.id")
 		if onlyWithFavorites != nil && *onlyWithFavorites {
-			favoritesSubquery := db.
-				Model(&models.UserMediaData{UserID: user.ID}).
-				Where("user_media_data.media_id = media.id").
-				Where("user_media_data.favorite = true")
-
-			subQuery = subQuery.Where("EXISTS (?)", favoritesSubquery)
+			//favoritesSubquery := db.
+			//	Model(&models.UserMediaData{UserID: user.ID}).
+			//	Where("user_media_data.media_id = media.id").
+			//	Where("user_media_data.favorite = true")
+			favoritesSub := fmt.Sprintf("select * from user_media_data where user_id= %v and user_media_data.media_id = media.id and user_media_data.favorite = true", user.ID)
+			//subQuery = subQuery.Where("EXISTS (?)", favoritesSubquery)
+			sub += fmt.Sprintf(" and EXISTS (%v)", favoritesSub)
 		}
 
-		query = query.Where("EXISTS (?)", subQuery)
+		//query = query.Where("EXISTS (?)", subQuery)
+		sql_albums_se += fmt.Sprintf(" and EXISTS (%v)", sub)
 	}
 
-	query = models.FormatSQL(query, order, paginate)
+	//query = models.FormatSQL(query, order, paginate)
+	var orderby string
+	orderby = *order.OrderBy
+	sql_albums_se += fmt.Sprintf(" order by %v", orderby)
 
 	var albums []*models.Album
-	if err := query.Find(&albums).Error; err != nil { //SELECT * FROM `albums` WHERE id IN (1) AND parent_album_id IS NULL ORDER BY `title`
-		return nil, err
+	//if err := query.Find(&albums).Error; err != nil { //SELECT * FROM `albums` WHERE id IN (1) AND parent_album_id IS NULL ORDER BY `title`
+	//	return nil, err
+	//}
+	dataApi, _ := DataApi.NewDataApiClient()
+	res, _ := dataApi.Query(sql_albums_se)
+	num := len(res)
+	for i := 0; i < num; i++ {
+		var album models.Album
+		album.ID = DataApi.GetInt(res, i, 0)
+		album.CreatedAt = time.Unix(*res[i][1].LongValue/1000, 0)
+		album.UpdatedAt = time.Unix(*res[i][2].LongValue/1000, 0)
+		album.Title = DataApi.GetString(res, i, 3)
+		album.ParentAlbumID = DataApi.GetIntP(res, i, 4)
+		album.Path = DataApi.GetString(res, i, 5)
+		album.PathHash = DataApi.GetString(res, i, 6)
+		album.CoverID = DataApi.GetIntP(res, i, 7)
+		albums = append(albums, &album)
 	}
-
 	return albums, nil
 }
 
-//基本修改完，还有一个函数未修改
+//修改完
 func Album(db *gorm.DB, user *models.User, id int) (*models.Album, error) {
 	var album models.Album
-	if err := db.First(&album, id).Error; err != nil { //SELECT * FROM `albums` WHERE `albums`.`id` = 1 ORDER BY `albums`.`id` LIMIT 1
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, errors.New("album not found")
-		}
-		return nil, err
-	}
+	//if err := db.First(&album, id).Error; err != nil { //SELECT * FROM `albums` WHERE `albums`.`id` = 1 ORDER BY `albums`.`id` LIMIT 1
+	//	if errors.Is(err, gorm.ErrRecordNotFound) {
+	//		return nil, errors.New("album not found")
+	//	}
+	//	return nil, err
+	//}
 	sql_albums_se := fmt.Sprintf("SELECT * FROM `albums` WHERE `albums`.`id` = %v ORDER BY `albums`.`id` LIMIT 1", id)
 	dataApi, _ := DataApi.NewDataApiClient()
 	res, err := dataApi.Query(sql_albums_se)
+	if len(res) == 0 {
+		return nil, err
+	}
 	album.ID = DataApi.GetInt(res, 0, 0)
 	album.CreatedAt = time.Unix(*res[0][1].LongValue/1000, 0)
 	album.UpdatedAt = time.Unix(*res[0][2].LongValue/1000, 0)
@@ -103,7 +134,7 @@ func Album(db *gorm.DB, user *models.User, id int) (*models.Album, error) {
 	return &album, nil
 }
 
-//基本修改完，还一个函数未修改
+//修改完
 func AlbumPath(db *gorm.DB, user *models.User, album *models.Album) ([]*models.Album, error) {
 	var album_path []*models.Album
 
@@ -116,11 +147,11 @@ func AlbumPath(db *gorm.DB, user *models.User, album *models.Album) ([]*models.A
 	//	SELECT * FROM path_albums WHERE id != ?
 	//`, album.ID, album.ID).Scan(&album_path).Error
 	/* WITH recursive path_albums AS (
-	           SELECT * FROM albums anchor WHERE anchor.id = 1
-	           UNION
-	           SELECT parent.* FROM path_albums child JOIN albums parent ON parent.id = child.parent_album_id
-	   )
-	   SELECT * FROM path_albums WHERE id != 1
+	      SELECT * FROM albums anchor WHERE anchor.id = 1
+	      UNION
+	      SELECT parent.* FROM path_albums child JOIN albums parent ON parent.id = child.parent_album_id
+	)
+	SELECT * FROM path_albums WHERE id != 1
 	*/
 
 	sql_albums_se := fmt.Sprintf("WITH recursive path_albums AS (SELECT * FROM albums anchor WHERE anchor.id = %v UNION SELECT parent.* FROM path_albums child JOIN albums parent ON parent.id = child.parent_album_id)SELECT * FROM path_albums WHERE id != %v", album.ID, album.ID)
@@ -162,16 +193,16 @@ func AlbumPath(db *gorm.DB, user *models.User, album *models.Album) ([]*models.A
 	return album_path, nil
 }
 
-//基本修改完，还有一个函数，未测试
+//修改完
 func SetAlbumCover(db *gorm.DB, user *models.User, mediaID int) (*models.Album, error) {
 	var media models.Media
 	dataApi, _ := DataApi.NewDataApiClient()
 	//if err := db.Find(&media, mediaID).Error; err != nil {
-	//	return nil, err
+	//return nil, err
 	//}
 	sql_media_se := fmt.Sprintf("select * from media where media.id=%v", mediaID)
 	res, err := dataApi.Query(sql_media_se)
-	if err != nil {
+	if len(res) == 0 {
 		return nil, err
 	}
 	media.ID = DataApi.GetInt(res, 0, 0)
@@ -200,6 +231,9 @@ func SetAlbumCover(db *gorm.DB, user *models.User, mediaID int) (*models.Album, 
 	//}
 	sql_albums_se := fmt.Sprintf("select * from albums where id=%v", media.AlbumID)
 	res, err = dataApi.Query(sql_albums_se)
+	if len(res) == 0 {
+		return nil, err
+	}
 	album.ID = int(*res[0][0].LongValue)
 	album.CreatedAt = time.Unix(*res[0][1].LongValue/1000, 0)
 	album.UpdatedAt = time.Unix(*res[0][2].LongValue/1000, 0)
@@ -227,7 +261,7 @@ func SetAlbumCover(db *gorm.DB, user *models.User, mediaID int) (*models.Album, 
 	return &album, nil
 }
 
-//基本修改完，还有一个函数，未测试
+//修改完
 func ResetAlbumCover(db *gorm.DB, user *models.User, albumID int) (*models.Album, error) {
 	var album models.Album
 	//if err := db.Find(&album, albumID).Error; err != nil {

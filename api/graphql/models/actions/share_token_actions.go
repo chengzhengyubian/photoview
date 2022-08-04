@@ -12,6 +12,7 @@ import (
 	"gorm.io/gorm"
 )
 
+//未修改
 func AddMediaShare(db *gorm.DB, user *models.User, mediaID int, expire *time.Time, password *string) (*models.ShareToken, error) {
 	var media models.Media
 
@@ -56,6 +57,7 @@ func AddMediaShare(db *gorm.DB, user *models.User, mediaID int, expire *time.Tim
 	return &shareToken, nil
 }
 
+//未修改
 func AddAlbumShare(db *gorm.DB, user *models.User, albumID int, expire *time.Time, password *string) (*models.ShareToken, error) {
 	var count int64
 	err := db.
@@ -97,6 +99,7 @@ func AddAlbumShare(db *gorm.DB, user *models.User, albumID int, expire *time.Tim
 	return &shareToken, nil
 }
 
+//未修改
 func DeleteShareToken(db *gorm.DB, userID int, tokenValue string) (*models.ShareToken, error) {
 	token, err := getUserToken(db, userID, tokenValue)
 	if err != nil {

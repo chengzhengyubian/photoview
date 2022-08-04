@@ -39,6 +39,7 @@ type TaskContext struct {
 	ctx context.Context
 }
 
+//这里注意一下
 func NewTaskContext(parent context.Context, db *gorm.DB, album *models.Album, cache *scanner_cache.AlbumScannerCache) TaskContext {
 	ctx := TaskContext{ctx: parent}
 	ctx = ctx.WithValue(taskCtxKeyAlbum, album)

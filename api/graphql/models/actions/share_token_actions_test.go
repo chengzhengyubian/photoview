@@ -14,7 +14,7 @@ func TestShareToken(t *testing.T) {
 	db := test_utils.DatabaseTest(t)
 
 	password := "1234"
-	user, err := models.RegisterUser(db, "user", &password, false)
+	user, err := models.RegisterUser("user", &password, false)
 	assert.NoError(t, err)
 
 	rootAlbum := models.Album{

@@ -18,7 +18,7 @@ import (
 func TestAuthenticateRoute(t *testing.T) {
 	db := test_utils.DatabaseTest(t)
 
-	user, err := models.RegisterUser(db, "username", nil, false)
+	user, err := models.RegisterUser("username", nil, false)
 	if !assert.NoError(t, err) {
 		return
 	}

@@ -2,10 +2,12 @@ package models
 
 import (
 	"crypto/rand"
+	"encoding/json"
 	"fmt"
 	DataApi "github.com/photoview/photoview/api/dataapi"
 	"rds-data-20220330/client"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -232,10 +234,14 @@ func (user *User) OwnsAlbum(db *gorm.DB, album *Album) (bool, error) {
 		albumIDs = append(albumIDs, a.ID)
 	}
 
-	filter := func(query *gorm.DB) *gorm.DB {
-		return query.Where("id IN (?)", albumIDs)
+	//filter := func(query *gorm.DB) *gorm.DB {
+	//	return query.Where("id IN (?)", albumIDs)
+	//}
+	albumID, _ := json.Marshal(albumIDs)
+	albumids := strings.Trim(string(albumID), "[]")
+	filter := func(sql string) string {
+		return sql + fmt.Sprintf(" where id in (%v)", albumids)
 	}
-
 	ownedParents, err := album.GetParents(db, filter)
 	if err != nil {
 		return false, err

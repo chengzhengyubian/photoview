@@ -10,11 +10,10 @@ import (
 	"github.com/photoview/photoview/api/scanner/media_encoding"
 	"github.com/photoview/photoview/api/scanner/media_encoding/media_utils"
 	"github.com/pkg/errors"
-	"gorm.io/gorm"
 )
 
 //修改完
-func generateSaveHighResJPEG(tx *gorm.DB, media *models.Media, imageData *media_encoding.EncodeMediaData, highres_name string, imagePath string, mediaURL *models.MediaURL) (*models.MediaURL, error) {
+func generateSaveHighResJPEG(media *models.Media, imageData *media_encoding.EncodeMediaData, highres_name string, imagePath string, mediaURL *models.MediaURL) (*models.MediaURL, error) {
 
 	err := imageData.EncodeHighRes(imagePath)
 	if err != nil {
@@ -66,7 +65,7 @@ func generateSaveHighResJPEG(tx *gorm.DB, media *models.Media, imageData *media_
 }
 
 //修改完，测试基本成功，入库有延迟
-func generateSaveThumbnailJPEG(tx *gorm.DB, media *models.Media, thumbnail_name string, photoCachePath string, baseImagePath string, mediaURL *models.MediaURL) (*models.MediaURL, error) {
+func generateSaveThumbnailJPEG(media *models.Media, thumbnail_name string, photoCachePath string, baseImagePath string, mediaURL *models.MediaURL) (*models.MediaURL, error) {
 	thumbOutputPath := path.Join(photoCachePath, thumbnail_name)
 
 	thumbSize, err := media_encoding.EncodeThumbnail(baseImagePath, thumbOutputPath)

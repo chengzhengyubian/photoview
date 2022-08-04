@@ -4,6 +4,7 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"fmt"
+	"github.com/photoview/photoview/api/dataapi"
 	"io"
 	"log"
 	"os"
@@ -97,7 +98,8 @@ func (t SidecarTask) ProcessMedia(ctx scanner_task.TaskContext, mediaData *media
 	baseImagePath := path.Join(mediaCachePath, highResURL.MediaName) // update base image path for thumbnail
 	tempHighResPath := baseImagePath + ".hold"
 	os.Rename(baseImagePath, tempHighResPath)
-	updatedHighRes, err := generateSaveHighResJPEG(ctx.GetDB(), photo, mediaData, highResURL.MediaName, baseImagePath, highResURL)
+	//修改完，参数去掉ctx.GetDB()
+	updatedHighRes, err := generateSaveHighResJPEG(photo, mediaData, highResURL.MediaName, baseImagePath, highResURL)
 	if err != nil {
 		os.Rename(tempHighResPath, baseImagePath)
 		return []*models.MediaURL{}, errors.Wrap(err, "sidecar task, recreating high-res cached image")
@@ -108,7 +110,8 @@ func (t SidecarTask) ProcessMedia(ctx scanner_task.TaskContext, mediaData *media
 	thumbPath := path.Join(mediaCachePath, thumbURL.MediaName)
 	tempThumbPath := thumbPath + ".hold" // hold onto the original image incase for some reason we fail to recreate one with the new settings
 	os.Rename(thumbPath, tempThumbPath)
-	updatedThumbnail, err := generateSaveThumbnailJPEG(ctx.GetDB(), photo, thumbURL.MediaName, mediaCachePath, baseImagePath, thumbURL)
+	//修改完，参数去掉ctx.GetDB()
+	updatedThumbnail, err := generateSaveThumbnailJPEG(photo, thumbURL.MediaName, mediaCachePath, baseImagePath, thumbURL)
 	if err != nil {
 		os.Rename(tempThumbPath, thumbPath)
 		return []*models.MediaURL{}, errors.Wrap(err, "recreating thumbnail cached image")
@@ -118,11 +121,13 @@ func (t SidecarTask) ProcessMedia(ctx scanner_task.TaskContext, mediaData *media
 	photo.SideCarHash = currentFileHash
 	photo.SideCarPath = currentSideCarPath
 
-	// save new side car hash
-	if err := ctx.GetDB().Save(&photo).Error; err != nil {
-		return []*models.MediaURL{}, errors.Wrapf(err, "could not update side car hash for media: %s", photo.Path)
-	}
-
+	// save new side car hash//修改完，待测试
+	//if err := ctx.GetDB().Save(&photo).Error; err != nil {
+	//	return []*models.MediaURL{}, errors.Wrapf(err, "could not update side car hash for media: %s", photo.Path)
+	//}
+	sql_media_up := fmt.Sprintf("update media set side_car_path=%v ,side_car_hash=%v where id=%v", photo.SideCarPath, photo.SideCarHash, photo.ID)
+	dataApi, _ := dataapi.NewDataApiClient()
+	dataApi.ExecuteSQl(sql_media_up)
 	return []*models.MediaURL{
 		updatedThumbnail,
 		updatedHighRes,
