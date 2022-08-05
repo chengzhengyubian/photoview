@@ -2,20 +2,21 @@ package resolvers
 
 import (
 	"context"
-	"time"
-
-	"github.com/pkg/errors"
-	"gorm.io/gorm"
+	"fmt"
+	DataApi "github.com/photoview/photoview/api/dataapi"
 	"gorm.io/gorm/clause"
+	"time"
 
 	api "github.com/photoview/photoview/api/graphql"
 	"github.com/photoview/photoview/api/graphql/auth"
 	"github.com/photoview/photoview/api/graphql/models"
 	"github.com/photoview/photoview/api/graphql/models/actions"
+	"github.com/pkg/errors"
 	"golang.org/x/crypto/bcrypt"
+	"gorm.io/gorm"
 )
 
-//未修改
+//
 type shareTokenResolver struct {
 	*Resolver
 }
@@ -41,6 +42,7 @@ func (r *shareTokenResolver) HasPassword(ctx context.Context, obj *models.ShareT
 	return hasPassword, nil
 }
 
+//未修改
 func (r *queryResolver) ShareToken(ctx context.Context, credentials models.ShareTokenCredentials) (*models.ShareToken, error) {
 
 	var token models.ShareToken
@@ -65,6 +67,7 @@ func (r *queryResolver) ShareToken(ctx context.Context, credentials models.Share
 	return &token, nil
 }
 
+//修改完，未测试
 func (r *queryResolver) ShareTokenValidatePassword(ctx context.Context, credentials models.ShareTokenCredentials) (bool, error) {
 	var token models.ShareToken
 	if err := r.DB(ctx).Where("value = ?", credentials.Token).First(&token).Error; err != nil {
@@ -75,6 +78,22 @@ func (r *queryResolver) ShareTokenValidatePassword(ctx context.Context, credenti
 		}
 	}
 
+	sql_share_tokens_select := fmt.Sprintf("select * from share_tokens where value=%v limit 1", credentials.Token)
+	dataApi, _ := DataApi.NewDataApiClient()
+	res, _ := dataApi.Query(sql_share_tokens_select)
+	if len(res) == 0 {
+		return false, errors.New("share not found")
+	}
+	token.ID = DataApi.GetInt(res, 0, 0)
+	token.CreatedAt = time.Unix(DataApi.GetLong(res, 0, 1)/1000, 0)
+	token.UpdatedAt = time.Unix(DataApi.GetLong(res, 0, 2)/1000, 0)
+	token.Value = DataApi.GetString(res, 0, 3)
+	token.OwnerID = DataApi.GetInt(res, 0, 4)
+	expire := time.Unix(DataApi.GetLong(res, 0, 5)/1000, 0)
+	token.Expire = &expire
+	token.Password = DataApi.GetStringP(res, 0, 6)
+	token.AlbumID = DataApi.GetIntP(res, 0, 7)
+	token.MediaID = DataApi.GetIntP(res, 0, 8)
 	if token.Password == nil {
 		return true, nil
 	}

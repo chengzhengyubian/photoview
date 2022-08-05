@@ -150,7 +150,6 @@ func ValidRootPath(rootPath string) bool {
 
 	return true
 }
-
 func ScanAlbum(ctx scanner_task.TaskContext) error {
 
 	newCtx, err := scanner_tasks.Tasks.BeforeScanAlbum(ctx)
@@ -177,20 +176,7 @@ func ScanAlbum(ctx scanner_task.TaskContext) error {
 			return err
 		}
 
-		//transactionError := ctx.DatabaseTransaction(func(ctx scanner_task.TaskContext) error {
-		//	updatedURLs, err = processMedia(ctx, &mediaData)
-		//	if err != nil {
-		//		return errors.Wrapf(err, "process media (%s)", media.Path)
-		//	}
-		//
-		//	if len(updatedURLs) > 0 {
-		//		changedMedia = append(changedMedia, media)
-		//	}
-		//
-		//	return nil
-		//})
-
-		{
+		transactionError := ctx.DatabaseTransaction(func(ctx scanner_task.TaskContext) error {
 			updatedURLs, err = processMedia(ctx, &mediaData)
 			if err != nil {
 				return errors.Wrapf(err, "process media (%s)", media.Path)
@@ -201,10 +187,23 @@ func ScanAlbum(ctx scanner_task.TaskContext) error {
 			}
 
 			return nil
-		}
-		//if transactionError != nil {
-		//	return errors.Wrap(err, "process media database transaction")
+		})
+
+		//{
+		//	updatedURLs, err = processMedia(ctx, &mediaData)
+		//	if err != nil {
+		//		return errors.Wrapf(err, "process media (%s)", media.Path)
+		//	}
+		//
+		//	if len(updatedURLs) > 0 {
+		//		changedMedia = append(changedMedia, media)
+		//	}
+		//
+		//	return nil
 		//}
+		if transactionError != nil {
+			return errors.Wrap(err, "process media database transaction")
+		}
 
 		if err = scanner_tasks.Tasks.AfterProcessMedia(ctx, &mediaData, updatedURLs, i, len(albumMedia)); err != nil {
 			return errors.Wrap(err, "after process media")
@@ -259,7 +258,6 @@ func findMediaForAlbum(ctx scanner_task.TaskContext) []*models.Media {
 
 				return nil
 			})
-
 			//{
 			//	media, isNewMedia, err := ScanMedia(ctx.GetDB(), mediaPath, ctx.GetAlbum().ID, ctx.GetCache())
 			//	if err != nil {

@@ -21,7 +21,8 @@ func authenticateMedia(media *models.Media, db *gorm.DB, r *http.Request) (succe
 		//if err := db.First(&album, media.AlbumID).Error; err != nil { //SELECT * FROM `albums` WHERE `albums`.`id` = 1 ORDER BY `albums`.`id` LIMIT 1
 		//	return false, "internal server error", http.StatusInternalServerError, err
 		//}
-		sql_albums_se := "SELECT * FROM `albums` WHERE `albums`.`id` = 1 ORDER BY `albums`.`id` LIMIT 1"
+		//sql_albums_se := "SELECT * FROM `albums` WHERE `albums`.`id` = ORDER BY `albums`.`id` LIMIT 1"
+		sql_albums_se := fmt.Sprintf("SELECT * FROM `albums` WHERE `albums`.`id` =%v ORDER BY `albums`.`id` LIMIT 1", media.AlbumID)
 		dataApi, _ := DataApi.NewDataApiClient()
 		res, err := dataApi.Query(sql_albums_se)
 		if len(res) == 0 {
@@ -161,6 +162,5 @@ func shareTokenFromRequest(db *gorm.DB, r *http.Request, mediaID *int, albumID *
 	if shareToken.MediaID != nil && *mediaID != *shareToken.MediaID {
 		return false, "unauthorized", http.StatusForbidden, errors.New("media share token does not match mediaID")
 	}
-
 	return true, "", 0, nil
 }

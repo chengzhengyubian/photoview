@@ -18,7 +18,7 @@ import (
 	"time"
 )
 
-//修改完，测试成功
+//
 
 func ScanMedia(tx *gorm.DB, mediaPath string, albumId int, cache *scanner_cache.AlbumScannerCache) (*models.Media, bool, error) {
 	mediaName := path.Base(mediaPath)

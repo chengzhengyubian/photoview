@@ -90,7 +90,7 @@ func (r *albumResolver) Media(ctx context.Context, album *models.Album, order *m
 		//query = query.Where("EXISTS (?)", favoriteQuery)
 		sql_media_se = fmt.Sprintf("SELECT * FROM `media` WHERE media.album_id = %v AND media.id IN (SELECT media_urls.media_id FROM `media_urls` WHERE media_urls.media_id = media.id) AND EXISTS (SELECT * FROM `user_media_data` WHERE user_media_data.media_id = media.id AND user_media_data.favorite = true AND `user_media_data`.`user_id` = %v) ORDER BY `%v` LIMIT %v OFFSET %v", album.ID, user.ID, orderby, limit, offset)
 	} else {
-		sql_media_se = fmt.Sprintf("SELECT * FROM `media` WHERE media.album_id = %v AND media.id IN (SELECT media_urls.media_id FROM `media_urls` WHERE media_urls.media_id = media.id) ORDER BY `%v` LIMIT %v", album.ID, orderby, limit)
+		sql_media_se = fmt.Sprintf("SELECT * FROM `media` WHERE media.album_id = %v AND media.id IN (SELECT media_urls.media_id FROM `media_urls` WHERE media_urls.media_id = media.id) ORDER BY `%v` LIMIT %v OFFSET %v", album.ID, orderby, limit, offset)
 	}
 	//query = models.FormatSQL(query, order, paginate)
 
