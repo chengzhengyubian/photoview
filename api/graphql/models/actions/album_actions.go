@@ -287,9 +287,9 @@ func ResetAlbumCover(db *gorm.DB, user *models.User, albumID int) (*models.Album
 		return nil, errors.New("forbidden")
 	}
 
-	if err := db.Model(&album).Update("cover_id", nil).Error; err != nil {
-		return nil, err
-	}
+	//if err := db.Model(&album).Update("cover_id", nil).Error; err != nil {
+	//	return nil, err
+	//}
 	sql_albums_up := fmt.Sprintf("update album set cover_id=NULL where id =%v", albumID)
 	dataApi.ExecuteSQl(sql_albums_up)
 	album.CoverID = nil

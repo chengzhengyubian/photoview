@@ -36,7 +36,7 @@ func (r *queryResolver) Album(ctx context.Context, id int, tokenCredentials *mod
 				return shareToken.Album, nil
 			}
 
-			subAlbum, err := shareToken.Album.GetChildren(db, func(sql string) string {
+			subAlbum, err := shareToken.Album.GetChildren(func(sql string) string {
 				//return query.Where("sub_albums.id = ?", id)
 				return sql + fmt.Sprintf(" where sub_albums.id =%v", id)
 			}) //这里注意一下

@@ -2,6 +2,8 @@ package resolvers
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	DataApi "github.com/photoview/photoview/api/dataapi"
 	"strconv"
 	"strings"
@@ -25,7 +27,7 @@ func (r *queryResolver) MyMedia(ctx context.Context, order *models.Ordering, pag
 	return actions.MyMedia(r.DB(ctx), user, order, paginate)
 }
 
-//未修改
+//修改中
 func (r *queryResolver) Media(ctx context.Context, id int, tokenCredentials *models.ShareTokenCredentials) (*models.Media, error) {
 	db := r.DB(ctx)
 	if tokenCredentials != nil {
@@ -54,6 +56,8 @@ func (r *queryResolver) Media(ctx context.Context, id int, tokenCredentials *mod
 		Where("media.id IN (?)", db.Model(&models.MediaURL{}).Select("media_id").Where("media_urls.media_id = media.id")).
 		First(&media).Error
 
+	sql_album_se := fmt.Sprintf("select media.* from media join album")
+
 	if err != nil {
 		return nil, errors.Wrap(err, "could not get media by media_id and user_id from database")
 	}
@@ -61,9 +65,9 @@ func (r *queryResolver) Media(ctx context.Context, id int, tokenCredentials *mod
 	return &media, nil
 }
 
-//未修改
+//修改完，未测试
 func (r *queryResolver) MediaList(ctx context.Context, ids []int) ([]*models.Media, error) {
-	db := r.DB(ctx)
+	//db := r.DB(ctx)
 	user := auth.UserFromContext(ctx)
 	if user == nil {
 		return nil, auth.ErrUnauthorized
@@ -74,16 +78,44 @@ func (r *queryResolver) MediaList(ctx context.Context, ids []int) ([]*models.Med
 	}
 
 	var media []*models.Media
-	err := db.Model(&media).
-		Joins("LEFT JOIN user_albums ON user_albums.album_id = media.album_id").
-		Where("media.id IN ?", ids).
-		Where("user_albums.user_id = ?", user.ID).
-		Find(&media).Error
+	//err := db.Model(&media).
+	//	Joins("LEFT JOIN user_albums ON user_albums.album_id = media.album_id").
+	//	Where("media.id IN ?", ids).
+	//	Where("user_albums.user_id = ?", user.ID).
+	//	Find(&media).Error
+	//
+	//if err != nil {
+	//	return nil, errors.Wrap(err, "could not get media list by media_id and user_id from database")
+	//}
 
-	if err != nil {
-		return nil, errors.Wrap(err, "could not get media list by media_id and user_id from database")
+	id, _ := json.Marshal(ids)
+	IDs := strings.Trim(string(id), "[]")
+	sql_media_se := fmt.Sprintf("select media.* from media left join user_albums ON user_albums.album_id = media.album_id where media_id in (%v) and user_albums.user_id =%v", IDs, user.ID)
+	dataApi, _ := DataApi.NewDataApiClient()
+	res, _ := dataApi.Query(sql_media_se)
+	num := len(res)
+	for i := 0; i < num; i++ {
+		var Media models.Media
+		Media.ID = DataApi.GetInt(res, i, 0)
+		Media.CreatedAt = time.Unix(*res[i][1].LongValue/1000, 0)
+		Media.UpdatedAt = time.Unix(*res[i][2].LongValue/1000, 0)
+		Media.Title = *res[i][3].StringValue
+		Media.Path = *res[i][4].StringValue
+		Media.PathHash = *res[i][5].StringValue
+		Media.AlbumID = int(*res[i][6].LongValue)
+		Media.ExifID = DataApi.GetIntP(res, i, 7)
+		Media.DateShot = time.Unix(*res[i][8].LongValue/1000, 0)
+		if *res[0][9].StringValue == "photo" {
+			Media.Type = models.MediaTypePhoto
+		} else {
+			Media.Type = models.MediaTypeVideo
+		}
+		Media.VideoMetadataID = DataApi.GetIntP(res, i, 10)
+		Media.SideCarPath = DataApi.GetStringP(res, i, 11)
+		Media.SideCarHash = DataApi.GetStringP(res, i, 12)
+		Media.Blurhash = DataApi.GetStringP(res, i, 13)
+		media = append(media, &Media)
 	}
-
 	return media, nil
 }
 
@@ -186,11 +218,11 @@ func (r *mediaResolver) VideoWeb(ctx context.Context, media *models.Media) (*mod
 	return dataloader.For(ctx).MediaVideoWeb.Load(media.ID)
 }
 
+//未修改
 func (r *mediaResolver) Exif(ctx context.Context, media *models.Media) (*models.MediaEXIF, error) {
 	if media.Exif != nil {
 		return media.Exif, nil
 	}
-
 	var exif models.MediaEXIF
 	if err := r.DB(ctx).Model(&media).Association("Exif").Find(&exif); err != nil {
 		return nil, err
@@ -221,6 +253,7 @@ func (r *mutationResolver) FavoriteMedia(ctx context.Context, mediaID int, favor
 	return user.FavoriteMedia(r.DB(ctx), mediaID, favorite)
 }
 
+//未修改
 func (r *mediaResolver) Faces(ctx context.Context, media *models.Media) ([]*models.ImageFace, error) {
 	if face_detection.GlobalFaceDetector == nil {
 		return []*models.ImageFace{}, nil

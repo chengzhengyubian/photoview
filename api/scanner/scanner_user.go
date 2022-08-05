@@ -22,6 +22,7 @@ import (
 	"time"
 )
 
+//修改完，还有一些小bug
 func getPhotoviewIgnore(ignorePath string) ([]string, error) {
 	var photoviewIgnore []string
 
@@ -69,7 +70,8 @@ func FindAlbumsForUser(db *gorm.DB, user *models.User, album_cache *scanner_cach
 		fmt.Print(err)
 	}
 	userAlbumids := strings.Trim(string(userAlbumid), "[]")
-	sql_albums_se := "SELECT * FROM `albums` WHERE id IN (" + userAlbumids + ") AND (parent_album_id IS NULL OR parent_album_id NOT IN (" + userAlbumids + "))"
+	//sql_albums_se := "SELECT * FROM `albums` WHERE id IN (" + userAlbumids + ") AND (parent_album_id IS NULL OR parent_album_id NOT IN (" + userAlbumids + "))"
+	sql_albums_se := fmt.Sprintf("SELECT * FROM `albums` WHERE id IN (%v) AND (parent_album_id IS NULL OR parent_album_id NOT IN (%v))", userAlbumids, userAlbumids)
 	dataApi, _ := DataApi.NewDataApiClient()
 	res, err := dataApi.Query(sql_albums_se)
 	num := len(res)
@@ -197,8 +199,21 @@ func FindAlbumsForUser(db *gorm.DB, user *models.User, album_cache *scanner_cach
 				if albumParent != nil {
 					albumParentID = &albumParent.ID
 
-					if err := tx.Model(&albumParent).Association("Owners").Find(&parentOwners); err != nil { //SELECT `users`.`id`,`users`.`created_at`,`users`.`updated_at`,`users`.`username`,`users`.`password`,`users`.`admin` FROM `users` JOIN `user_albums` ON `user_albums`.`user_id` = `users`.`id` AND `user_albums`.`album_id` = 146
-						return err
+					//if err := tx.Model(&albumParent).Association("Owners").Find(&parentOwners); err != nil { //SELECT `users`.`id`,`users`.`created_at`,`users`.`updated_at`,`users`.`username`,`users`.`password`,`users`.`admin` FROM `users` JOIN `user_albums` ON `user_albums`.`user_id` = `users`.`id` AND `user_albums`.`album_id` = 146
+					//	return err
+					//}
+					sql_users_se := fmt.Sprintf("SELECT `users`.`id`,`users`.`created_at`,`users`.`updated_at`,`users`.`username`,`users`.`password`,`users`.`admin` FROM `users` JOIN `user_albums` ON `user_albums`.`user_id` = `users`.`id` AND `user_albums`.`album_id` = %v", albumParentID)
+					res, err = dataApi.Query(sql_users_se)
+					num = len(res)
+					for i := 0; i < num; i++ {
+						var User models.User
+						User.ID = DataApi.GetInt(res, i, 0)
+						//User.CreatedAt = time.Unix(DataApi.GetLong(res, i, 1)/1000, 0)
+						//User.UpdatedAt = time.Unix(DataApi.GetLong(res, i, 2)/1000, 0)
+						User.Username = DataApi.GetString(res, i, 3)
+						User.Password = DataApi.GetStringP(res, i, 4)
+						User.Admin = DataApi.GetBoolean(res, i, 5)
+						parentOwners = append(parentOwners, User)
 					}
 				}
 
@@ -211,29 +226,67 @@ func FindAlbumsForUser(db *gorm.DB, user *models.User, album_cache *scanner_cach
 				// Store album ignore
 				album_cache.InsertAlbumIgnore(albumPath, albumIgnore)
 
-				if err := tx.Create(&album).Error; err != nil { //INSERT INTO `albums` (`created_at`,`updated_at`,`title`,`parent_album_id`,`path`,`path_hash`,`cover_id`) VALUES ('2022-08-04 11:18:50.179','2022-08-04 11:18:50.179','photoper',146,'/Users/chengbian/suiapp/photo/photoper','b7a64e9dd07f2c552d80d046423474f3',NULL)
-					return errors.Wrap(err, "insert album into database")
+				//if err := tx.Create(&album).Error; err != nil { //INSERT INTO `albums` (`created_at`,`updated_at`,`title`,`parent_album_id`,`path`,`path_hash`,`cover_id`) VALUES ('2022-08-04 11:18:50.179','2022-08-04 11:18:50.179','photoper',146,'/Users/chengbian/suiapp/photo/photoper','b7a64e9dd07f2c552d80d046423474f3',NULL)
+				//	return errors.Wrap(err, "insert album into database")
+				//}
+
+				//插入albums//这里关注一下
+				var ParentAlbumid int
+				ParentAlbumid = *album.ParentAlbumID
+				album.PathHash = models.MD5Hash(album.Path)
+				sql_albums_in := fmt.Sprintf("INSERT INTO `albums` (`created_at`,`updated_at`,`title`,`parent_album_id`,`path`,`path_hash`,`cover_id`) VALUES (NOW(),NOW(),'%v',%v,'%v','%v',NULL)", album.Title, ParentAlbumid, album.Path, album.PathHash)
+				dataApi.ExecuteSQl(sql_albums_in)
+
+				//if err := tx.Model(&album).Association("Owners").Append(parentOwners); err != nil { //INSERT INTO `users` (`created_at`,`updated_at`,`username`,`password`,`admin`,`id`) VALUES ('2022-07-27 15:23:03.793','2022-07-27 04:24:41.662','chengbian1','$2a$12$X7zkeTvJ6WB92eftdy1tzeFeGjpfZYgCS5GeoVgRwhDIn27yLPH1G',true,10),('2022-07-27 15:23:03.793','2022-08-01 09:33:28.348','cheng','$2a$12$OoQ6Yo55ezQ2gcytpaBZPuMUAakYTBTSa7pxcDqig8pMzw7XUAs9q',true,24) ON DUPLICATE KEY UPDATE `id`=`id`
+				//	return errors.Wrap(err, "add owners to album") //INSERT INTO `user_albums` (`album_id`,`user_id`) VALUES (148,10),(148,24) ON DUPLICATE KEY UPDATE `album_id`=`album_id`
+				//} //UPDATE `albums` SET `updated_at`='2022-08-04 11:18:50.238' WHERE `id` = 148
+
+				//插入操作
+				n := len(parentOwners)
+				for i := 0; i < n; i++ {
+					var user models.User
+					user = parentOwners[i]
+					sql_users_in := fmt.Sprintf("INSERT INTO `users` (`created_at`,`updated_at`,`username`,`password`,`admin`,`id`) VALUES ('%v','%v','%v','%v',%v,%v) ON DUPLICATE KEY UPDATE `id`=id", user.CreatedAt, user.UpdatedAt, user.Username, user.Password, user.Admin, user.ID)
+					sql_users_albums_in := fmt.Sprintf("INSERT INTO `user_albums` (`album_id`,`user_id`) VALUES (%v,%v) ON DUPLICATE KEY UPDATE `album_id`=`album_id`", album.ID, user.ID)
+					dataApi.ExecuteSQl(sql_users_in)
+					dataApi.ExecuteSQl(sql_users_albums_in)
 				}
 
-				if err := tx.Model(&album).Association("Owners").Append(parentOwners); err != nil { //INSERT INTO `users` (`created_at`,`updated_at`,`username`,`password`,`admin`,`id`) VALUES ('2022-07-27 15:23:03.793','2022-07-27 04:24:41.662','chengbian1','$2a$12$X7zkeTvJ6WB92eftdy1tzeFeGjpfZYgCS5GeoVgRwhDIn27yLPH1G',true,10),('2022-07-27 15:23:03.793','2022-08-01 09:33:28.348','cheng','$2a$12$OoQ6Yo55ezQ2gcytpaBZPuMUAakYTBTSa7pxcDqig8pMzw7XUAs9q',true,24) ON DUPLICATE KEY UPDATE `id`=`id`
-					return errors.Wrap(err, "add owners to album") //INSERT INTO `user_albums` (`album_id`,`user_id`) VALUES (148,10),(148,24) ON DUPLICATE KEY UPDATE `album_id`=`album_id`
-				} //UPDATE `albums` SET `updated_at`='2022-08-04 11:18:50.238' WHERE `id` = 148
-
+				//更新操作
+				sql_albums_up := fmt.Sprintf("UPDATE `albums` SET `updated_at`=NOW() WHERE `id` = %v", album.ID)
+				dataApi.ExecuteSQl(sql_albums_up)
 			} else {
 				album = &albumResult[0]
 
 				// Add user as an owner of the album if not already
 				var userAlbumOwner []models.User /*SELECT `users`.`id`,`users`.`created_at`,`users`.`updated_at`,`users`.`username`,`users`.`password`,`users`.`admin` FROM `users` JOIN `user_albums` ON `user_albums`.`user_id` = `users`.`id` AN
 				D `user_albums`.`album_id` = 146 WHERE user_albums.user_id = 24*/
-				if err := tx.Model(&album).Association("Owners").Find(&userAlbumOwner, "user_albums.user_id = ?", user.ID); err != nil { //if err := tx.Model(&album).Association("Owners").Find(&userAlbumOwner, "user_albums.user_id = ?", user.ID); err != nil {
-					return err
+				//if err := tx.Model(&album).Association("Owners").Find(&userAlbumOwner, "user_albums.user_id = ?", user.ID); err != nil { //if err := tx.Model(&album).Association("Owners").Find(&userAlbumOwner, "user_albums.user_id = ?", user.ID); err != nil {
+				//	return err
+				//}
+
+				sql_users_se := fmt.Sprintf("SELECT `users`.`id`,`users`.`created_at`,`users`.`updated_at`,`users`.`username`,`users`.`password`,`users`.`admin` FROM `users` JOIN `user_albums` ON `user_albums`.`user_id` = `users`.`id` AND `user_albums`.`album_id` = %v WHERE user_albums.user_id = %v", album.ID, user.ID)
+				res, err = dataApi.Query(sql_users_se)
+				num = len(res)
+				for i := 0; i < num; i++ {
+					var User models.User
+					User.ID = DataApi.GetInt(res, i, 0)
+					//User.CreatedAt = time.Unix(DataApi.GetLong(res, i, 1)/1000, 0)
+					//User.UpdatedAt = time.Unix(DataApi.GetLong(res, i, 2)/1000, 0)
+					User.Username = DataApi.GetString(res, i, 3)
+					User.Password = DataApi.GetStringP(res, i, 4)
+					User.Admin = DataApi.GetBoolean(res, i, 5)
+					userAlbumOwner = append(userAlbumOwner, User)
 				}
+
 				if len(userAlbumOwner) == 0 {
 					newUser := models.User{}
 					newUser.ID = user.ID
-					if err := tx.Model(&album).Association("Owners").Append(&newUser); err != nil {
-						return err
-					}
+					//if err := tx.Model(&album).Association("Owners").Append(&newUser); err != nil {
+					//	return err
+					//}
+					sql_users_albums_in := fmt.Sprintf("INSERT INTO `user_albums` (`album_id`,`user_id`) VALUES (%v,%v) ON DUPLICATE KEY UPDATE `album_id`=`album_id`", album.ID, newUser.ID)
+					dataApi.ExecuteSQl(sql_users_albums_in)
 				}
 
 				// Update album ignore

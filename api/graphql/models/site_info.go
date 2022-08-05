@@ -68,6 +68,7 @@ func GetSiteInfo(db *gorm.DB) (*SiteInfo, error) {
 		//if err := db.Create(&newSiteInfo).Error; err != nil {
 		//	return nil, errors.Wrap(err, "initialize site_info")
 		//}
+		//return &newSiteInfo, nil
 		sql_site_info_in := "INSERT INTO  site_info( initial_setup , periodic_scan_interval,concurrent_workers ) VALUES (" + strconv.Itoa(setup) + "," + strconv.Itoa(newSiteInfo.PeriodicScanInterval) + "," + strconv.Itoa(newSiteInfo.ConcurrentWorkers) + ")"
 		dataAPi.ExecuteSQl(sql_site_info_in)
 		return &newSiteInfo, nil
@@ -85,4 +86,5 @@ func GetSiteInfo(db *gorm.DB) (*SiteInfo, error) {
 	//} else {
 	//	return siteInfo[0], nil
 	//}
+
 }

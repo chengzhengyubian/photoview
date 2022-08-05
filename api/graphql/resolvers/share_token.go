@@ -15,6 +15,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+//未修改
 type shareTokenResolver struct {
 	*Resolver
 }

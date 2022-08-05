@@ -92,19 +92,17 @@ func (r *mutationResolver) SetPeriodicScanInterval(ctx context.Context, interval
 //修改完，未测试
 func (r *mutationResolver) SetScannerConcurrentWorkers(ctx context.Context, workers int) (int, error) {
 	//db := r.DB(ctx)
-	if workers < 1 {
-		return 0, errors.New("concurrent workers must at least be 1")
-	}
+	//if workers < 1 {
+	//return 0, errors.New("concurrent workers must at least be 1")
+	//}
 
 	//注意一下
 	if workers > 1 && drivers.DatabaseDriverFromEnv() == drivers.SQLITE {
 		return 0, errors.New("multiple workers not supported for SQLite databases")
 	}
-
 	//if err := db.Session(&gorm.Session{AllowGlobalUpdate: true}).Model(&models.SiteInfo{}).Update("concurrent_workers", workers).Error; err != nil {
 	//	return 0, err
 	//}
-
 	sql_site_info_up := fmt.Sprintf("update site_info set concurrent_workers=%v", workers)
 	dataApi, _ := DataApi.NewDataApiClient()
 	dataApi.ExecuteSQl(sql_site_info_up)
@@ -113,7 +111,6 @@ func (r *mutationResolver) SetScannerConcurrentWorkers(ctx context.Context, work
 	//if err := db.First(&siteInfo).Error; err != nil {
 	//	return 0, err
 	//}
-
 	sql_site_info_se := fmt.Sprintf("select * from site_info limit 1")
 	res, err := dataApi.Query(sql_site_info_se)
 	if len(res) == 0 {
@@ -124,6 +121,26 @@ func (r *mutationResolver) SetScannerConcurrentWorkers(ctx context.Context, work
 	siteInfo.ConcurrentWorkers = DataApi.GetInt(res, 0, 2)
 
 	scanner_queue.ChangeScannerConcurrentWorkers(siteInfo.ConcurrentWorkers)
+
+	//db := r.DB(ctx)
+	//if workers < 1 {
+	//	return 0, errors.New("concurrent workers must at least be 1")
+	//}
+	//
+	//if workers > 1 && drivers.DatabaseDriverFromEnv() == drivers.SQLITE {
+	//	return 0, errors.New("multiple workers not supported for SQLite databases")
+	//}
+	//
+	//if err := db.Session(&gorm.Session{AllowGlobalUpdate: true}).Model(&models.SiteInfo{}).Update("concurrent_workers", workers).Error; err != nil {
+	//	return 0, err
+	//}
+	//
+	//var siteInfo models.SiteInfo
+	//if err := db.First(&siteInfo).Error; err != nil {
+	//	return 0, err
+	//}
+	//
+	//scanner_queue.ChangeScannerConcurrentWorkers(siteInfo.ConcurrentWorkers)
 
 	return siteInfo.ConcurrentWorkers, nil
 }

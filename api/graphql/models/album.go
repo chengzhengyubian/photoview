@@ -36,28 +36,28 @@ func (a *Album) BeforeSave(tx *gorm.DB) (err error) {
 
 // GetChildren performs a recursive query to get all the children of the album.
 // An optional filter can be provided that can be used to modify the query on the children.
-func (a *Album) GetChildren(db *gorm.DB, filter func(sql string) string) (children []*Album, err error) {
-	return GetChildrenFromAlbums(db, filter, []int{a.ID})
+func (a *Album) GetChildren( /*db *gorm.DB*/ filter func(sql string) string) (children []*Album, err error) {
+	return GetChildrenFromAlbums(filter, []int{a.ID})
 }
 
 //修改完，待测试
-func GetChildrenFromAlbums(db *gorm.DB, filter func(sql string) string, albumIDs []int) (children []*Album, err error) {
-	query := db.Model(&Album{}).Table("sub_albums")
+func GetChildrenFromAlbums( /*db *gorm.DB*/ filter func(sql string) string, albumIDs []int) (children []*Album, err error) {
+	//query := db.Model(&Album{}).Table("sub_albums")
 	sql_albums_se := "select * from sub_albums"
 	//标记一下，应该是递归
 	if filter != nil {
 		//query = filter(query)
 		sql_albums_se = filter(sql_albums_se)
 	}
-	err = db.Raw(`
-	WITH recursive sub_albums AS (
-		SELECT * FROM albums AS root WHERE id IN (?)
-		UNION ALL
-		SELECT child.* FROM albums AS child JOIN sub_albums ON child.parent_album_id = sub_albums.id
-	)
-
-	?
-	`, albumIDs, query).Find(&children).Error
+	//err = db.Raw(`
+	//WITH recursive sub_albums AS (
+	//	SELECT * FROM albums AS root WHERE id IN (?)
+	//	UNION ALL
+	//	SELECT child.* FROM albums AS child JOIN sub_albums ON child.parent_album_id = sub_albums.id
+	//)
+	//
+	//?
+	//`, albumIDs, query).Find(&children).Error
 	/* WITH recursive sub_albums AS (
 	           SELECT * FROM albums AS root WHERE id IN (110)
 	           UNION ALL
@@ -170,6 +170,9 @@ func (a *Album) Thumbnail(db *gorm.DB) (*Media, error) {
 		sql_media_se := fmt.Sprintf("WITH recursive sub_albums AS (SELECT * FROM albums AS root WHERE id = %v UNION ALL SELECT child.* FROM albums AS child JOIN sub_albums ON child.parent_album_id = sub_albums.id) SELECT * FROM media WHERE media.album_id IN (SELECT id FROM sub_albums) AND media.id IN (SELECT media_id FROM media_urls WHERE media_urls.media_id = media.id) ORDER BY id LIMIT 1", a.ID)
 		dataApi, _ := DataApi.NewDataApiClient()
 		res, err := dataApi.Query(sql_media_se)
+		if len(res) == 0 {
+			return nil, err
+		}
 		media.ID = DataApi.GetInt(res, 0, 0)
 		media.CreatedAt = time.Unix(*res[0][1].LongValue/1000, 0)
 		media.UpdatedAt = time.Unix(*res[0][2].LongValue/1000, 0)
