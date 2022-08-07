@@ -184,7 +184,7 @@ func (user *User) GenerateAccessToken() (*AccessToken, error) {
 }
 
 // FillAlbums fill user.Albums with albums from database 修改完
-func (user *User) FillAlbums(db *gorm.DB) error {
+func (user *User) FillAlbums() error {
 	// Albums already present
 	if len(user.Albums) > 0 {
 		return nil
@@ -225,7 +225,7 @@ func (user *User) FillAlbums(db *gorm.DB) error {
 //这里还未改,应该是递归
 func (user *User) OwnsAlbum(db *gorm.DB, album *Album) (bool, error) {
 
-	if err := user.FillAlbums(db); err != nil {
+	if err := user.FillAlbums(); err != nil {
 		return false, err
 	}
 

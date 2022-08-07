@@ -65,7 +65,7 @@ func (r faceGroupResolver) ImageFaces(ctx context.Context, obj *models.FaceGroup
 		return nil, errors.New("face detector not initialized")
 	}
 
-	if err := user.FillAlbums(db); err != nil {
+	if err := user.FillAlbums(); err != nil {
 		return nil, err
 	}
 
@@ -100,7 +100,7 @@ func (r faceGroupResolver) ImageFaceCount(ctx context.Context, obj *models.FaceG
 		return -1, errors.New("face detector not initialized")
 	}
 
-	if err := user.FillAlbums(db); err != nil {
+	if err := user.FillAlbums(); err != nil {
 		return -1, err
 	}
 
@@ -134,7 +134,7 @@ func (r *queryResolver) FaceGroup(ctx context.Context, id int) (*models.FaceGrou
 		return nil, errors.New("face detector not initialized")
 	}
 
-	if err := user.FillAlbums(db); err != nil {
+	if err := user.FillAlbums(); err != nil {
 		return nil, err
 	}
 
@@ -168,7 +168,7 @@ func (r *queryResolver) MyFaceGroups(ctx context.Context, paginate *models.Pagin
 		return nil, errors.New("face detector not initialized")
 	}
 
-	if err := user.FillAlbums(db); err != nil {
+	if err := user.FillAlbums(); err != nil {
 		return nil, err
 	}
 
@@ -417,7 +417,7 @@ func userOwnedFaceGroup(db *gorm.DB, user *models.User, faceGroupID int) (*model
 		return &faceGroup, nil
 	}
 
-	if err := user.FillAlbums(db); err != nil {
+	if err := user.FillAlbums(); err != nil {
 		return nil, err
 	}
 
@@ -451,7 +451,7 @@ func userOwnedFaceGroup(db *gorm.DB, user *models.User, faceGroupID int) (*model
 }
 
 func getUserOwnedImageFaces(tx *gorm.DB, user *models.User, imageFaceIDs []int) ([]*models.ImageFace, error) {
-	if err := user.FillAlbums(tx); err != nil {
+	if err := user.FillAlbums(); err != nil {
 		return nil, err
 	}
 

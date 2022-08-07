@@ -84,7 +84,7 @@ func TestUserFillAlbums(t *testing.T) {
 		return
 	}
 
-	err := user.FillAlbums(db)
+	err := user.FillAlbums()
 	assert.NoError(t, err)
 	assert.Empty(t, user.Albums)
 
@@ -105,7 +105,7 @@ func TestUserFillAlbums(t *testing.T) {
 
 	user.Albums = make([]models.Album, 0)
 
-	err = user.FillAlbums(db)
+	err = user.FillAlbums()
 	assert.NoError(t, err)
 	assert.Len(t, user.Albums, 2)
 

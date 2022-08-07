@@ -56,7 +56,7 @@ func (r *queryResolver) User(ctx context.Context, order *models.Ordering, pagina
 
 //
 func (r *userResolver) Albums(ctx context.Context, user *models.User) ([]*models.Album, error) {
-	user.FillAlbums(r.DB(ctx))
+	user.FillAlbums()
 
 	pointerAlbums := make([]*models.Album, len(user.Albums))
 	for i, album := range user.Albums {

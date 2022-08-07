@@ -99,21 +99,22 @@ func ScanMedia(tx *gorm.DB, mediaPath string, albumId int, cache *scanner_cache.
 		Type:     mediaTypeText,
 		DateShot: stat.ModTime(),
 	}
-	//timestr := media.DateShot.Format("2006-01-02 15:04:05")
-	if err := tx.Debug().Create(&media).Error; err != nil { //INSERT INTO `media` (`created_at`,`updated_at`,`title`,`path`,`path_hash`,`album_id`,`exif_id`,`date_shot`,`type`,`video_metadata_id`,`side_car_path`,`side_car_hash`,`blurhash`) VALUES ('2022-08-04 11:18:51.083','2022-08-04 11:18:51.083','自我介绍.png','/Users/chengbian/suiapp/photo/photoper/自我介绍.png','f9b6fd9b47d427178a9d22198dac7c9c',148,NULL,'2022-06-30 17:50:25.916','photo',NULL,NULL,NULL,NULL
-		return nil, false, errors.Wrap(err, "could not insert media into database")
-	}
-	//var Type string
-	//if media.Type == models.MediaTypePhoto {
-	//	Type = "photo"
-	//} else {
-	//	Type = "video"
+	timestr := media.DateShot.Format("2006-01-02 15:04:05")
+	//if err := tx.Debug().Create(&media).Error; err != nil { //INSERT INTO `media` (`created_at`,`updated_at`,`title`,`path`,`path_hash`,`album_id`,`exif_id`,`date_shot`,`type`,`video_metadata_id`,`side_car_path`,`side_car_hash`,`blurhash`) VALUES ('2022-08-04 11:18:51.083','2022-08-04 11:18:51.083','自我介绍.png','/Users/chengbian/suiapp/photo/photoper/自我介绍.png','f9b6fd9b47d427178a9d22198dac7c9c',148,NULL,'2022-06-30 17:50:25.916','photo',NULL,NULL,NULL,NULL
+	//	return nil, false, errors.Wrap(err, "could not insert media into database")
 	//}
+	var Type string
+	if media.Type == models.MediaTypePhoto {
+		Type = "photo"
+	} else {
+		Type = "video"
+	}
 	//sql_media_in := "insert into media (created_at, updated_at,title,path, path_hash,album_id, date_shot,type) values(NOW(),NOW(),\"" + media.Title + "\",\"" + media.Path + "\",\"" + models.MD5Hash(media.Path) + "\"," + strconv.Itoa(media.AlbumID) + ",\"" + timestr + "\",\"" + Type + "\")"
-	//sql_media_in := fmt.Sprintf("insert into media (created_at, updated_at,title,path, path_hash,album_id, date_shot,type) values(NOW(),NOW(),'%v','%v','%v',%v,'%v','%v')", media.Title, media.Path, models.MD5Hash(media.Path), media.AlbumID, timestr, Type)
-	//dataApi, _ := DataApi.NewDataApiClient()
-	//time.Sleep(time.Second * 1)
-	//dataApi.ExecuteSQl(sql_media_in)
+	sql_media_in := fmt.Sprintf("insert into media (created_at, updated_at,title,path, path_hash,album_id, date_shot,type) values(NOW(),NOW(),'%v','%v','%v',%v,'%v','%v')", media.Title, media.Path, models.MD5Hash(media.Path), media.AlbumID, timestr, Type)
+	//sql_media_urls_in := fmt.Sprintf("insert into media_urls(created_at, updated_at,media_id,media_name,)")
+	dataApi, _ := DataApi.NewDataApiClient()
+	time.Sleep(time.Second * 1)
+	dataApi.ExecuteSQl(sql_media_in)
 	return &media, true, nil
 }
 

@@ -10,7 +10,7 @@ import (
 
 //修改完，未测试
 func MyMedia(db *gorm.DB, user *models.User, order *models.Ordering, paginate *models.Pagination) ([]*models.Media, error) {
-	if err := user.FillAlbums(db); err != nil {
+	if err := user.FillAlbums(); err != nil {
 		return nil, err
 	}
 

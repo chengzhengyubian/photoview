@@ -13,7 +13,7 @@ import (
 
 //修改完，未测试
 func MyAlbums(db *gorm.DB, user *models.User, order *models.Ordering, paginate *models.Pagination, onlyRoot *bool, showEmpty *bool, onlyWithFavorites *bool) ([]*models.Album, error) {
-	if err := user.FillAlbums(db); err != nil {
+	if err := user.FillAlbums(); err != nil {
 		return nil, err
 	}
 
