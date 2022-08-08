@@ -5,7 +5,6 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
-	"gorm.io/gorm"
 )
 
 const loadersKey = "dataloaders"
@@ -18,16 +17,16 @@ type Loaders struct {
 	UserMediaFavorite   *UserFavoritesLoader
 }
 
-func Middleware(db *gorm.DB) mux.MiddlewareFunc {
+func Middleware( /*db *gorm.DB*/ ) mux.MiddlewareFunc {
 	return mux.MiddlewareFunc(func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 			ctx := context.WithValue(r.Context(), loadersKey, &Loaders{
-				MediaThumbnail:      NewThumbnailMediaURLLoader(db),
-				MediaHighres:        NewHighresMediaURLLoader(db),
-				MediaVideoWeb:       NewVideoWebMediaURLLoader(db),
-				UserFromAccessToken: NewUserLoaderByToken(db),
-				UserMediaFavorite:   NewUserFavoriteLoader(db),
+				MediaThumbnail:      NewThumbnailMediaURLLoader( /*db*/ ),
+				MediaHighres:        NewHighresMediaURLLoader( /*db*/ ),
+				MediaVideoWeb:       NewVideoWebMediaURLLoader( /*db*/ ),
+				UserFromAccessToken: NewUserLoaderByToken( /*db*/ ),
+				UserMediaFavorite:   NewUserFavoriteLoader( /*db*/ ),
 			})
 
 			r = r.WithContext(ctx)

@@ -33,7 +33,7 @@ func (t ProcessVideoTask) ProcessMedia(ctx scanner_task.TaskContext, mediaData *
 
 	log.Printf("Processing video: %s", video.Path)
 
-	mediaURLFromDB := makePhotoURLChecker(ctx.GetDB(), video.ID)
+	mediaURLFromDB := makePhotoURLChecker( /*ctx.GetDB(), */ video.ID)
 
 	videoOriginalURL, err := mediaURLFromDB(models.MediaOriginal)
 	if err != nil {
@@ -119,6 +119,7 @@ func (t ProcessVideoTask) ProcessMedia(ctx scanner_task.TaskContext, mediaData *
 			FileSize:    fileStats.Size(),
 		}
 
+		//未修改
 		if err := ctx.GetDB().Create(&mediaURL).Error; err != nil {
 			return []*models.MediaURL{}, errors.Wrapf(err, "failed to insert encoded web-video into database (%s)", video.Title)
 		}
@@ -164,6 +165,7 @@ func (t ProcessVideoTask) ProcessMedia(ctx scanner_task.TaskContext, mediaData *
 			FileSize:    fileStats.Size(),
 		}
 
+		//未修改
 		if err := ctx.GetDB().Create(&thumbMediaURL).Error; err != nil {
 			return []*models.MediaURL{}, errors.Wrapf(err, "failed to insert video thumbnail image into database (%s)", video.Title)
 		}
@@ -196,6 +198,7 @@ func (t ProcessVideoTask) ProcessMedia(ctx scanner_task.TaskContext, mediaData *
 			videoThumbnailURL.Height = thumbDimensions.Height
 			videoThumbnailURL.FileSize = fileStats.Size()
 
+			//未修改
 			if err := ctx.GetDB().Save(videoThumbnailURL).Error; err != nil {
 				return []*models.MediaURL{}, errors.Wrap(err, "updating video thumbnail url in database after re-encoding")
 			}

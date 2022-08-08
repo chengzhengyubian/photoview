@@ -1,9 +1,11 @@
 package resolvers
 
+//修改完
 import (
 	"context"
 	"fmt"
 	DataApi "github.com/photoview/photoview/api/dataapi"
+	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 	"time"
 
@@ -13,7 +15,7 @@ import (
 	"github.com/photoview/photoview/api/graphql/models/actions"
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/bcrypt"
-	"gorm.io/gorm"
+	//"gorm.io/gorm"
 )
 
 //
@@ -119,7 +121,7 @@ func (r *mutationResolver) ShareAlbum(ctx context.Context, albumID int, expire *
 		return nil, auth.ErrUnauthorized
 	}
 
-	return actions.AddAlbumShare(r.DB(ctx), user, albumID, expire, password)
+	return actions.AddAlbumShare(user, albumID, expire, password)
 }
 
 func (r *mutationResolver) ShareMedia(ctx context.Context, mediaID int, expire *time.Time, password *string) (*models.ShareToken, error) {
@@ -128,7 +130,7 @@ func (r *mutationResolver) ShareMedia(ctx context.Context, mediaID int, expire *
 		return nil, auth.ErrUnauthorized
 	}
 
-	return actions.AddMediaShare(r.DB(ctx), user, mediaID, expire, password)
+	return actions.AddMediaShare(user, mediaID, expire, password)
 }
 
 func (r *mutationResolver) DeleteShareToken(ctx context.Context, tokenValue string) (*models.ShareToken, error) {
@@ -137,7 +139,7 @@ func (r *mutationResolver) DeleteShareToken(ctx context.Context, tokenValue stri
 		return nil, auth.ErrUnauthorized
 	}
 
-	return actions.DeleteShareToken(r.DB(ctx), user.ID, tokenValue)
+	return actions.DeleteShareToken(user.ID, tokenValue)
 }
 
 func (r *mutationResolver) ProtectShareToken(ctx context.Context, tokenValue string, password *string) (*models.ShareToken, error) {
@@ -146,5 +148,5 @@ func (r *mutationResolver) ProtectShareToken(ctx context.Context, tokenValue str
 		return nil, auth.ErrUnauthorized
 	}
 
-	return actions.ProtectShareToken(r.DB(ctx), user.ID, tokenValue, password)
+	return actions.ProtectShareToken(user.ID, tokenValue, password)
 }

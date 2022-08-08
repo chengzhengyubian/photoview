@@ -1,5 +1,6 @@
 package dataloader
 
+/*修改完*/
 import (
 	"encoding/json"
 	"fmt"
@@ -8,11 +9,10 @@ import (
 	"time"
 
 	"github.com/photoview/photoview/api/graphql/models"
-	"gorm.io/gorm"
 )
 
 //修改完
-func NewUserLoaderByToken(db *gorm.DB) *UserLoader {
+func NewUserLoaderByToken( /*db *gorm.DB*/ ) *UserLoader {
 	return &UserLoader{
 		maxBatch: 100,
 		wait:     5 * time.Millisecond,

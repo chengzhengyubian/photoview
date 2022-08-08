@@ -1,12 +1,12 @@
 package models
 
+//修改完
 import (
 	"crypto/md5"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	DataApi "github.com/photoview/photoview/api/dataapi"
-	"gorm.io/gorm"
 	"strings"
 	"time"
 )
@@ -28,7 +28,7 @@ func (a *Album) FilePath() string {
 	return a.Path
 }
 
-func (a *Album) BeforeSave(tx *gorm.DB) (err error) {
+func (a *Album) BeforeSave( /*tx *gorm.DB*/ ) (err error) {
 	hash := md5.Sum([]byte(a.Path))
 	a.PathHash = hex.EncodeToString(hash[:])
 	return nil
@@ -87,12 +87,12 @@ func GetChildrenFromAlbums( /*db *gorm.DB*/ filter func(sql string) string, albu
 	return children, err
 }
 
-func (a *Album) GetParents(db *gorm.DB, filter func(sql string) string) (parents []*Album, err error) {
-	return GetParentsFromAlbums(db, filter, a.ID)
+func (a *Album) GetParents(filter func(sql string) string) (parents []*Album, err error) {
+	return GetParentsFromAlbums(filter, a.ID)
 }
 
 //修改完，待测试
-func GetParentsFromAlbums(db *gorm.DB, filter func(sql string) string, albumID int) (parents []*Album, err error) {
+func GetParentsFromAlbums(filter func(sql string) string, albumID int) (parents []*Album, err error) {
 	//query := db.Model(&Album{}).Table("super_albums")
 	sql_albums_se := "select * from super_albums"
 	if filter != nil {
@@ -136,7 +136,7 @@ func GetParentsFromAlbums(db *gorm.DB, filter func(sql string) string, albumID i
 
 //修改完，暂时没问题
 
-func (a *Album) Thumbnail(db *gorm.DB) (*Media, error) {
+func (a *Album) Thumbnail( /*db *gorm.DB*/ ) (*Media, error) {
 	var media Media
 
 	if a.CoverID == nil {
@@ -198,7 +198,8 @@ func (a *Album) Thumbnail(db *gorm.DB) (*Media, error) {
 		//if err := db.Where("id = ?", a.CoverID).Find(&media).Error; err != nil {
 		//	return nil, err
 		//}
-		sql_media_se := fmt.Sprintf("select * from media where id=%v", a.CoverID)
+		id := *a.CoverID
+		sql_media_se := fmt.Sprintf("select * from media where id=%v", id)
 		dataApi, _ := DataApi.NewDataApiClient()
 		res, err := dataApi.Query(sql_media_se)
 		media.ID = DataApi.GetInt(res, 0, 0)

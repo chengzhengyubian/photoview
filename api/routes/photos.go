@@ -1,10 +1,11 @@
 package routes
 
+//修改完
 import (
 	"fmt"
 	"github.com/gorilla/mux"
 	DataApi "github.com/photoview/photoview/api/dataapi"
-	"gorm.io/gorm"
+	//"gorm.io/gorm"
 	"log"
 	"net/http"
 	"os"
@@ -15,7 +16,7 @@ import (
 )
 
 //修改中，测试完，还一个函数未改
-func RegisterPhotoRoutes(db *gorm.DB, router *mux.Router) {
+func RegisterPhotoRoutes( /*db *gorm.DB, */ router *mux.Router) {
 
 	router.HandleFunc("/{name}", func(w http.ResponseWriter, r *http.Request) {
 		mediaName := mux.Vars(r)["name"]
@@ -81,7 +82,7 @@ func RegisterPhotoRoutes(db *gorm.DB, router *mux.Router) {
 		mediaURL.Media.Blurhash = DataApi.GetStringP(res, 0, 23)
 		media := mediaURL.Media //这里注意一下media有没有值，另外考虑吧下怎么赋值
 
-		if success, response, status, err := authenticateMedia(media, db, r); !success {
+		if success, response, status, err := authenticateMedia(media /* db, */, r); !success {
 			if err != nil {
 				log.Printf("WARN: error authenticating photo: %s\n", err)
 			}
@@ -99,19 +100,19 @@ func RegisterPhotoRoutes(db *gorm.DB, router *mux.Router) {
 		}
 
 		if _, err := os.Stat(cachedPath); os.IsNotExist((err)) {
-			err := db.Transaction(func(tx *gorm.DB) error {
-				if err = scanner.ProcessSingleMedia(tx, media); err != nil {
-					log.Printf("ERROR: processing image not found in cache (%s): %s\n", cachedPath, err)
-					return err
-				}
+			//err := db.Transaction(func(tx *gorm.DB) error {
+			if err = scanner.ProcessSingleMedia( /*tx, */ media); err != nil {
+				log.Printf("ERROR: processing image not found in cache (%s): %s\n", cachedPath, err)
+				return
+			}
 
-				if _, err = os.Stat(cachedPath); err != nil {
-					log.Printf("ERROR: after reprocessing image not found in cache (%s): %s\n", cachedPath, err)
-					return err
-				}
+			if _, err = os.Stat(cachedPath); err != nil {
+				log.Printf("ERROR: after reprocessing image not found in cache (%s): %s\n", cachedPath, err)
+				return
+			}
 
-				return nil
-			})
+			//return nil
+			//})
 
 			if err != nil {
 				w.WriteHeader(http.StatusInternalServerError)

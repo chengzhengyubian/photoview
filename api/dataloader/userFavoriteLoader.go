@@ -1,5 +1,6 @@
 package dataloader
 
+/*修改完*/
 import (
 	"encoding/json"
 	"fmt"
@@ -8,10 +9,9 @@ import (
 	"time"
 
 	"github.com/photoview/photoview/api/graphql/models"
-	"gorm.io/gorm"
 )
 
-func NewUserFavoriteLoader(db *gorm.DB) *UserFavoritesLoader {
+func NewUserFavoriteLoader( /*db *gorm.DB*/ ) *UserFavoritesLoader {
 	return &UserFavoritesLoader{
 		maxBatch: 100,
 		wait:     5 * time.Millisecond,

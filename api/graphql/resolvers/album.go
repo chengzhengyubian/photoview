@@ -1,5 +1,6 @@
 package resolvers
 
+//修改完
 import (
 	"context"
 	"fmt"
@@ -19,11 +20,11 @@ func (r *queryResolver) MyAlbums(ctx context.Context, order *models.Ordering, pa
 		return nil, auth.ErrUnauthorized
 	}
 
-	return actions.MyAlbums(r.DB(ctx), user, order, paginate, onlyRoot, showEmpty, onlyWithFavorites)
+	return actions.MyAlbums(user, order, paginate, onlyRoot, showEmpty, onlyWithFavorites)
 }
 
 func (r *queryResolver) Album(ctx context.Context, id int, tokenCredentials *models.ShareTokenCredentials) (*models.Album, error) {
-	db := r.DB(ctx)
+	//db := r.DB(ctx)
 	if tokenCredentials != nil {
 
 		shareToken, err := r.ShareToken(ctx, *tokenCredentials)
@@ -55,7 +56,7 @@ func (r *queryResolver) Album(ctx context.Context, id int, tokenCredentials *mod
 		return nil, auth.ErrUnauthorized
 	}
 
-	return actions.Album(db, user, id)
+	return actions.Album(user, id)
 }
 
 func (r *Resolver) Album() api.AlbumResolver {
@@ -131,7 +132,7 @@ func (r *albumResolver) Media(ctx context.Context, album *models.Album, order *m
 }
 
 func (r *albumResolver) Thumbnail(ctx context.Context, album *models.Album) (*models.Media, error) {
-	return album.Thumbnail(r.DB(ctx))
+	return album.Thumbnail( /*r.DB(ctx)*/ )
 }
 
 //修改完，未测试
@@ -139,8 +140,8 @@ func (r *albumResolver) SubAlbums(ctx context.Context, parent *models.Album, ord
 
 	var albums []*models.Album
 
-	query := r.DB(ctx).Where("parent_album_id = ?", parent.ID)
-	query = models.FormatSQL(query, order, paginate)
+	//query := r.DB(ctx).Where("parent_album_id = ?", parent.ID)
+	//query = models.FormatSQL(query, order, paginate)
 
 	//if err := query.Find(&albums).Error; err != nil { //SELECT * FROM `albums` WHERE parent_album_id = 1 ORDER BY `title`
 	//	return nil, err
@@ -204,8 +205,14 @@ func (r *albumResolver) Shares(ctx context.Context, album *models.Album) ([]*mod
 		shareToken.UpdatedAt = time.Unix(DataApi.GetLong(res, i, 2)/1000, 0)
 		shareToken.Value = DataApi.GetString(res, i, 3)
 		shareToken.OwnerID = DataApi.GetInt(res, i, 4)
-		times := time.Unix(DataApi.GetLong(res, i, 5)/1000, 0)
-		shareToken.Expire = &times
+		//times := time.Unix(DataApi.GetLong(res, i, 5)/1000, 0)
+		//shareToken.Expire = &times
+		if DataApi.GetLongP(res, 0, 5) == nil {
+			shareToken.Expire = nil
+		} else {
+			expire := time.Unix(DataApi.GetLong(res, 0, 5)/1000, 0)
+			shareToken.Expire = &expire
+		}
 		shareToken.Password = DataApi.GetStringP(res, i, 6)
 		shareToken.AlbumID = DataApi.GetIntP(res, i, 7)
 		shareToken.MediaID = DataApi.GetIntP(res, i, 8)
@@ -222,7 +229,7 @@ func (r *albumResolver) Path(ctx context.Context, obj *models.Album) ([]*models.
 		return empty, nil
 	}
 
-	return actions.AlbumPath(r.DB(ctx), user, obj)
+	return actions.AlbumPath(user, obj)
 }
 
 // Takes album_id, resets album.cover_id to 0 (null)
@@ -232,7 +239,7 @@ func (r *mutationResolver) ResetAlbumCover(ctx context.Context, albumID int) (*m
 		return nil, errors.New("unauthorized")
 	}
 
-	return actions.ResetAlbumCover(r.DB(ctx), user, albumID)
+	return actions.ResetAlbumCover(user, albumID)
 }
 
 func (r *mutationResolver) SetAlbumCover(ctx context.Context, mediaID int) (*models.Album, error) {
@@ -241,5 +248,5 @@ func (r *mutationResolver) SetAlbumCover(ctx context.Context, mediaID int) (*mod
 		return nil, errors.New("unauthorized")
 	}
 
-	return actions.SetAlbumCover(r.DB(ctx), user, mediaID)
+	return actions.SetAlbumCover(user, mediaID)
 }

@@ -189,9 +189,9 @@ func MigrateDatabase(db *gorm.DB) error {
 
 	// v2.3.0 - Changed type of MediaEXIF.Exposure and MediaEXIF.Flash
 	// from string values to decimal and int respectively
-	if err := migrate_exif_fields(db); err != nil {
+	/*if err := migrate_exif_fields(db); err != nil {
 		log.Printf("Failed to run exif fields migration: %v\n", err)
-	}
+	}*/
 
 	return nil
 }

@@ -1,5 +1,6 @@
 package routes
 
+//修改完
 import (
 	"fmt"
 	DataApi "github.com/photoview/photoview/api/dataapi"
@@ -7,13 +8,13 @@ import (
 	"github.com/photoview/photoview/api/graphql/models"
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/bcrypt"
-	"gorm.io/gorm"
+	//"gorm.io/gorm"
 	"net/http"
 	"time"
 )
 
-//修改中，未改完，还一个函数未改
-func authenticateMedia(media *models.Media, db *gorm.DB, r *http.Request) (success bool, responseMessage string, responseStatus int, errorMessage error) {
+//修改完
+func authenticateMedia(media *models.Media /*db *gorm.DB,*/, r *http.Request) (success bool, responseMessage string, responseStatus int, errorMessage error) {
 	user := auth.UserFromContext(r.Context())
 
 	if user != nil {
@@ -37,7 +38,7 @@ func authenticateMedia(media *models.Media, db *gorm.DB, r *http.Request) (succe
 		album.PathHash = DataApi.GetString(res, 0, 6)
 		album.CoverID = DataApi.GetIntP(res, 0, 7)
 
-		ownsAlbum, err := user.OwnsAlbum(db, &album) //这里注意一下，这里还没改
+		ownsAlbum, err := user.OwnsAlbum(&album) //这里注意一下，这里还没改
 		if err != nil {
 			return false, "internal server error", http.StatusInternalServerError, err
 		}
@@ -46,7 +47,7 @@ func authenticateMedia(media *models.Media, db *gorm.DB, r *http.Request) (succe
 			return false, "invalid credentials", http.StatusForbidden, nil
 		}
 	} else {
-		if success, respMsg, respStatus, err := shareTokenFromRequest(db, r, &media.ID, &media.AlbumID); !success {
+		if success, respMsg, respStatus, err := shareTokenFromRequest( /*db, */ r, &media.ID, &media.AlbumID); !success {
 			return success, respMsg, respStatus, err
 		}
 
@@ -55,11 +56,11 @@ func authenticateMedia(media *models.Media, db *gorm.DB, r *http.Request) (succe
 	return true, "success", http.StatusAccepted, nil
 }
 
-func authenticateAlbum(album *models.Album, db *gorm.DB, r *http.Request) (success bool, responseMessage string, responseStatus int, errorMessage error) {
+func authenticateAlbum(album *models.Album /*db *gorm.DB, */, r *http.Request) (success bool, responseMessage string, responseStatus int, errorMessage error) {
 	user := auth.UserFromContext(r.Context())
 
 	if user != nil {
-		ownsAlbum, err := user.OwnsAlbum(db, album)
+		ownsAlbum, err := user.OwnsAlbum(album)
 		if err != nil {
 			return false, "internal server error", http.StatusInternalServerError, err
 		}
@@ -68,7 +69,7 @@ func authenticateAlbum(album *models.Album, db *gorm.DB, r *http.Request) (succe
 			return false, "invalid credentials", http.StatusForbidden, nil
 		}
 	} else {
-		if success, respMsg, respStatus, err := shareTokenFromRequest(db, r, nil, &album.ID); !success {
+		if success, respMsg, respStatus, err := shareTokenFromRequest( /*db, */ r, nil, &album.ID); !success {
 			return success, respMsg, respStatus, err
 		}
 
@@ -78,7 +79,7 @@ func authenticateAlbum(album *models.Album, db *gorm.DB, r *http.Request) (succe
 }
 
 //修改完
-func shareTokenFromRequest(db *gorm.DB, r *http.Request, mediaID *int, albumID *int) (success bool, responseMessage string, responseStatus int, errorMessage error) {
+func shareTokenFromRequest( /*db *gorm.DB,*/ r *http.Request, mediaID *int, albumID *int) (success bool, responseMessage string, responseStatus int, errorMessage error) {
 	// Check if photo is authorized with a share token
 	token := r.URL.Query().Get("token")
 	if token == "" {

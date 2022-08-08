@@ -1,5 +1,6 @@
 package dataloader
 
+/*修改完*/
 import (
 	"encoding/json"
 	"fmt"
@@ -10,12 +11,11 @@ import (
 	"github.com/photoview/photoview/api/graphql/models"
 	"github.com/photoview/photoview/api/scanner/media_type"
 	"github.com/pkg/errors"
-
-	"gorm.io/gorm"
+	//"gorm.io/gorm"
 )
 
 //修改完，暂时没问题
-func makeMediaURLLoader(db *gorm.DB, filter func(sql string) string) func(keys []int) ([]*models.MediaURL, []error) {
+func makeMediaURLLoader( /*db *gorm.DB,*/ filter func(sql string) string) func(keys []int) ([]*models.MediaURL, []error) {
 	return func(mediaIDs []int) ([]*models.MediaURL, []error) {
 
 		var urls []*models.MediaURL
@@ -79,11 +79,11 @@ func makeMediaURLLoader(db *gorm.DB, filter func(sql string) string) func(keys [
 	}
 }
 
-func NewThumbnailMediaURLLoader(db *gorm.DB) *MediaURLLoader {
+func NewThumbnailMediaURLLoader( /*db *gorm.DB*/ ) *MediaURLLoader {
 	return &MediaURLLoader{
 		maxBatch: 100,
 		wait:     5 * time.Millisecond,
-		fetch: makeMediaURLLoader(db, func(sql string) string {
+		fetch: makeMediaURLLoader( /*db, */ func(sql string) string {
 			//return query.Where("purpose = ? OR purpose = ?", models.PhotoThumbnail, models.VideoThumbnail)
 
 			return sql + fmt.Sprintf(" and (purpose = '%v' OR purpose ='%v'", models.PhotoThumbnail, models.VideoThumbnail)
@@ -91,22 +91,22 @@ func NewThumbnailMediaURLLoader(db *gorm.DB) *MediaURLLoader {
 	}
 }
 
-func NewHighresMediaURLLoader(db *gorm.DB) *MediaURLLoader {
+func NewHighresMediaURLLoader( /*db *gorm.DB*/ ) *MediaURLLoader {
 	return &MediaURLLoader{
 		maxBatch: 100,
 		wait:     5 * time.Millisecond,
-		fetch: makeMediaURLLoader(db, func(sql string) string {
+		fetch: makeMediaURLLoader( /*db, */ func(sql string) string {
 			//return query.Where("purpose = ? OR (purpose = ? AND content_type IN ?)", models.PhotoHighRes, models.MediaOriginal, media_type.WebMimetypes)
 			return sql + fmt.Sprintf(" and (purpose ='%v' OR (purpose ='%v' AND content_type IN %v)", models.PhotoHighRes, models.MediaOriginal, media_type.WebMimetypes)
 		}),
 	}
 }
 
-func NewVideoWebMediaURLLoader(db *gorm.DB) *MediaURLLoader {
+func NewVideoWebMediaURLLoader( /*db *gorm.DB*/ ) *MediaURLLoader {
 	return &MediaURLLoader{
 		maxBatch: 100,
 		wait:     5 * time.Millisecond,
-		fetch: makeMediaURLLoader(db, func(sql string) string {
+		fetch: makeMediaURLLoader( /*db, */ func(sql string) string {
 			//return query.Where("purpose = ? OR purpose = ?", models.VideoWeb, models.MediaOriginal)
 			return sql + fmt.Sprintf(" and (purpose ='%v' OR (purpose ='%v'", models.VideoWeb, models.MediaOriginal)
 		}),

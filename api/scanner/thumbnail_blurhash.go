@@ -10,13 +10,12 @@ import (
 
 	"github.com/buckket/go-blurhash"
 	"github.com/photoview/photoview/api/graphql/models"
-	"gorm.io/gorm"
 )
 
 //修改完，测试基本成功，后续关注
 // GenerateBlurhashes queries the database for media that are missing a blurhash and computes one for them.
 // This function blocks until all hashes have been computed
-func GenerateBlurhashes(db *gorm.DB) error {
+func GenerateBlurhashes( /*db *gorm.DB*/ ) error {
 	var results []*models.Media
 
 	processErrors := make([]error, 0)

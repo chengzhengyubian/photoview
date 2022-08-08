@@ -1,7 +1,10 @@
 package resolvers
 
+//修改完
 import (
 	"context"
+	"fmt"
+	"github.com/photoview/photoview/api/dataapi"
 	"os"
 	"path"
 
@@ -77,20 +80,43 @@ func (r *queryResolver) MyMediaGeoJSON(ctx context.Context) (interface{}, error)
 
 	var media []*geoMedia
 
-	err := r.DB(ctx).Table("media").
-		Select(
-			"media.id AS media_id, media.title AS media_title, "+
-				"media_urls.media_name AS thumbnail_name, media_urls.width AS thumbnail_width, media_urls.height AS thumbnail_height, "+
-				"media_exif.gps_latitude AS latitude, media_exif.gps_longitude AS longitude").
-		Joins("INNER JOIN media_exif ON media.exif_id = media_exif.id").
-		Joins("INNER JOIN media_urls ON media.id = media_urls.media_id").
-		Joins("INNER JOIN user_albums ON media.album_id = user_albums.album_id").
-		Where("media_exif.gps_latitude IS NOT NULL").
-		Where("media_exif.gps_longitude IS NOT NULL").
-		Where("media_urls.purpose = 'thumbnail'").
-		Where("user_albums.user_id = ?", user.ID).
-		Scan(&media).Error
-
+	//err := r.DB(ctx).Table("media").
+	//	Select(
+	//		"media.id AS media_id, media.title AS media_title, "+
+	//			"media_urls.media_name AS thumbnail_name, media_urls.width AS thumbnail_width, media_urls.height AS thumbnail_height, "+
+	//			"media_exif.gps_latitude AS latitude, media_exif.gps_longitude AS longitude").
+	//	Joins("INNER JOIN media_exif ON media.exif_id = media_exif.id").
+	//	Joins("INNER JOIN media_urls ON media.id = media_urls.media_id").
+	//	Joins("INNER JOIN user_albums ON media.album_id = user_albums.album_id").
+	//	Where("media_exif.gps_latitude IS NOT NULL").
+	//	Where("media_exif.gps_longitude IS NOT NULL").
+	//	Where("media_urls.purpose = 'thumbnail'").
+	//	Where("user_albums.user_id = ?", user.ID).
+	//	Scan(&media).Error
+	/*SELECT media.id AS media_id, media.title AS media_title, media_urls.media_name AS thumbnail_name, media_urls.width AS thumbnail_width, media_urls.height AS thumbnail_height, media_exif.gps_latitude AS latitude, media_exif.gps_longitude AS longitude FROM `media` INNER JOIN media_exif ON media.exif_id = media_exif.id INNER JOIN media_urls ON media.id = media_urls.media_id INNER JOIN user_albums ON media.album_id = user_albums.album_id WHERE media_exif.gps_latitude IS NOT NULL AND media_exif.gps_longitude IS NOT NULL AND media_urls.purpose = 'thumbnail' AND user_albums.user_id = 24
+	 */
+	sql_media_se := fmt.Sprintf("SELECT media.id AS media_id, media.title AS media_title, media_urls.media_name AS thumbnail_name, media_urls.width AS thumbnail_width, media_urls.height AS thumbnail_height, media_exif.gps_latitude AS latitude, media_exif.gps_longitude AS longitude FROM `media` INNER JOIN media_exif ON media.exif_id = media_exif.id INNER JOIN media_urls ON media.id = media_urls.media_id INNER JOIN user_albums ON media.album_id = user_albums.album_id WHERE media_exif.gps_latitude IS NOT NULL AND media_exif.gps_longitude IS NOT NULL AND media_urls.purpose = 'thumbnail' AND user_albums.user_id = %v", user.ID)
+	dataApi, _ := dataapi.NewDataApiClient()
+	res, err := dataApi.Query(sql_media_se)
+	num := len(res)
+	if len(res) == 0 {
+		return nil, err
+	}
+	for i := 0; i < num; i++ {
+		var Media geoMedia
+		Media.MediaID = dataapi.GetInt(res, 0, 0)
+		Media.MediaTitle = dataapi.GetString(res, 0, 1)
+		Media.ThumbnailName = dataapi.GetString(res, 0, 2)
+		Media.ThumbnailWidth = dataapi.GetInt(res, 0, 3)
+		Media.ThumbnailHeight = dataapi.GetInt(res, 0, 4)
+		var lati float64
+		lati = float64(dataapi.GetLong(res, 0, 5))
+		Media.Latitude = lati
+		var long float64
+		long = float64(dataapi.GetLong(res, 0, 6))
+		Media.Longitude = long
+		media = append(media, &Media)
+	}
 	if err != nil {
 		return nil, err
 	}

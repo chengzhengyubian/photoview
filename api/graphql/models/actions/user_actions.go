@@ -1,5 +1,6 @@
 package actions
 
+//修改完
 import (
 	"errors"
 	"fmt"
@@ -11,11 +12,10 @@ import (
 
 	"github.com/photoview/photoview/api/graphql/models"
 	"github.com/photoview/photoview/api/utils"
-	"gorm.io/gorm"
 )
 
 //修改完，还剩一个admin的案例还未测试
-func DeleteUser(db *gorm.DB, userID int) (*models.User, error) {
+func DeleteUser(userID int) (*models.User, error) {
 
 	// make sure the last admin user is not deleted
 	var adminUsers []*models.User
@@ -41,10 +41,11 @@ func DeleteUser(db *gorm.DB, userID int) (*models.User, error) {
 	var user models.User
 	deletedAlbumIDs := make([]int, 0)
 
-	err = db.Transaction(func(tx *gorm.DB) error {
-		//if err := tx.First(&user, userID).Error; err != nil { //SELECT * FROM `users` WHERE `users`.`id` = 12 ORDER BY `users`.`id` LIMIT 1
-		//	return err
-		//}
+	//err = db.Transaction(func(tx *gorm.DB) error {
+	//if err := tx.First(&user, userID).Error; err != nil { //SELECT * FROM `users` WHERE `users`.`id` = 12 ORDER BY `users`.`id` LIMIT 1
+	//	return err
+	//}
+	{
 		sql_users_se = "SELECT * FROM `users` WHERE `users`.`id` =" + strconv.Itoa(userID) + " ORDER BY `users`.`id` LIMIT 1"
 		res, err := dataApi.Query(sql_users_se)
 		user.ID = int(*res[0][0].LongValue)
@@ -100,9 +101,9 @@ func DeleteUser(db *gorm.DB, userID int) (*models.User, error) {
 		sql_users_de := "DELETE FROM `users` WHERE `users`.`id` =" + strconv.Itoa(userID)
 		dataApi.ExecuteSQl(sql_users_de)
 
-		return nil
-	})
-
+		//return nil
+		//})
+	}
 	if err != nil {
 		return nil, err
 	}

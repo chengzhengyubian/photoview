@@ -1,5 +1,6 @@
 package scanner
 
+/*修改完*/
 import (
 	"fmt"
 	DataApi "github.com/photoview/photoview/api/dataapi"
@@ -13,7 +14,6 @@ import (
 	"github.com/photoview/photoview/api/scanner/scanner_utils"
 	"github.com/photoview/photoview/api/utils"
 	"github.com/pkg/errors"
-	"gorm.io/gorm"
 	"io/ioutil"
 	"log"
 	"os"
@@ -22,7 +22,7 @@ import (
 )
 
 //修改中
-func NewRootAlbum(db *gorm.DB, rootPath string, owner *models.User) (*models.Album, error) {
+func NewRootAlbum(rootPath string, owner *models.User) (*models.Album, error) {
 
 	if !ValidRootPath(rootPath) {
 		return nil, ErrorInvalidRootPath
@@ -189,23 +189,21 @@ func ScanAlbum(ctx scanner_task.TaskContext) error {
 		//	return nil
 		//})
 
-		{
-			updatedURLs, err = processMedia(ctx, &mediaData)
-			if err != nil {
-				return errors.Wrapf(err, "process media (%s)", media.Path)
-			}
-
-			if len(updatedURLs) > 0 {
-
-				changedMedia = append(changedMedia, media)
-			}
-
-			//return nil
+		updatedURLs, err = processMedia(ctx, &mediaData)
+		if err != nil {
+			return errors.Wrapf(err, "process media (%s)", media.Path)
 		}
+
+		if len(updatedURLs) > 0 {
+
+			changedMedia = append(changedMedia, media)
+		}
+
+		//return nil
+
 		//if transactionError != nil {
 		//	return errors.Wrap(err, "process media database transaction")
 		//}
-
 		if err = scanner_tasks.Tasks.AfterProcessMedia(ctx, &mediaData, updatedURLs, i, len(albumMedia)); err != nil {
 			return errors.Wrap(err, "after process media")
 		}
@@ -260,7 +258,7 @@ func findMediaForAlbum(ctx scanner_task.TaskContext) []*models.Media {
 			//	return nil
 			//})
 			{
-				media, isNewMedia, err := ScanMedia(ctx.GetDB(), mediaPath, ctx.GetAlbum().ID, ctx.GetCache())
+				media, isNewMedia, err := ScanMedia( /*ctx.GetDB(), */ mediaPath, ctx.GetAlbum().ID, ctx.GetCache())
 				if err != nil {
 					return nil
 				}

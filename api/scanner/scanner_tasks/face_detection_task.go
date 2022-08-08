@@ -2,10 +2,8 @@ package scanner_tasks
 
 import (
 	"github.com/photoview/photoview/api/graphql/models"
-	"github.com/photoview/photoview/api/scanner/face_detection"
 	"github.com/photoview/photoview/api/scanner/media_encoding"
 	"github.com/photoview/photoview/api/scanner/scanner_task"
-	"github.com/photoview/photoview/api/scanner/scanner_utils"
 )
 
 type FaceDetectionTask struct {
@@ -17,12 +15,12 @@ func (t FaceDetectionTask) AfterProcessMedia(ctx scanner_task.TaskContext, media
 
 	if didProcess && mediaData.Media.Type == models.MediaTypePhoto {
 		go func(media *models.Media) {
-			if face_detection.GlobalFaceDetector == nil {
+			/*if face_detection.GlobalFaceDetector == nil {
 				return
-			}
-			if err := face_detection.GlobalFaceDetector.DetectFaces(ctx.GetDB(), media); err != nil {
+			}*/
+			/*if err := face_detection.GlobalFaceDetector.DetectFaces(ctx.GetDB(), media); err != nil {
 				scanner_utils.ScannerError("Error detecting faces in image (%s): %s", media.Path, err)
-			}
+			}*/
 		}(mediaData.Media)
 	}
 

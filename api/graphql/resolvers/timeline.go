@@ -1,5 +1,6 @@
 package resolvers
 
+//修改完
 import (
 	"context"
 	"time"
@@ -15,5 +16,5 @@ func (r *queryResolver) MyTimeline(ctx context.Context, paginate *models.Paginat
 		return nil, auth.ErrUnauthorized
 	}
 
-	return actions.MyTimeline(r.DB(ctx), user, paginate, onlyFavorites, fromDate)
+	return actions.MyTimeline(user, paginate, onlyFavorites, fromDate)
 }

@@ -1,18 +1,18 @@
 package actions
 
+//修改完
 import (
 	"encoding/json"
 	"fmt"
 	DataApi "github.com/photoview/photoview/api/dataapi"
 	"github.com/photoview/photoview/api/graphql/models"
 	"github.com/pkg/errors"
-	"gorm.io/gorm"
 	"strings"
 	"time"
 )
 
 //修改完，未测试
-func MyAlbums(db *gorm.DB, user *models.User, order *models.Ordering, paginate *models.Pagination, onlyRoot *bool, showEmpty *bool, onlyWithFavorites *bool) ([]*models.Album, error) {
+func MyAlbums(user *models.User, order *models.Ordering, paginate *models.Pagination, onlyRoot *bool, showEmpty *bool, onlyWithFavorites *bool) ([]*models.Album, error) {
 	if err := user.FillAlbums(); err != nil {
 		return nil, err
 	}
@@ -100,7 +100,7 @@ func MyAlbums(db *gorm.DB, user *models.User, order *models.Ordering, paginate *
 }
 
 //修改完
-func Album(db *gorm.DB, user *models.User, id int) (*models.Album, error) {
+func Album(user *models.User, id int) (*models.Album, error) {
 	var album models.Album
 	//if err := db.First(&album, id).Error; err != nil { //SELECT * FROM `albums` WHERE `albums`.`id` = 1 ORDER BY `albums`.`id` LIMIT 1
 	//	if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -122,7 +122,7 @@ func Album(db *gorm.DB, user *models.User, id int) (*models.Album, error) {
 	album.Path = DataApi.GetString(res, 0, 5)
 	album.PathHash = DataApi.GetString(res, 0, 6)
 	album.CoverID = DataApi.GetIntP(res, 0, 7)
-	ownsAlbum, err := user.OwnsAlbum(db, &album) //这里注意一下
+	ownsAlbum, err := user.OwnsAlbum(&album) //这里注意一下
 	if err != nil {
 		return nil, err
 	}
@@ -135,7 +135,7 @@ func Album(db *gorm.DB, user *models.User, id int) (*models.Album, error) {
 }
 
 //修改完
-func AlbumPath(db *gorm.DB, user *models.User, album *models.Album) ([]*models.Album, error) {
+func AlbumPath(user *models.User, album *models.Album) ([]*models.Album, error) {
 	var album_path []*models.Album
 
 	//err := db.Raw(`
@@ -174,7 +174,7 @@ func AlbumPath(db *gorm.DB, user *models.User, album *models.Album) ([]*models.A
 	for i := len(album_path) - 1; i >= 0; i-- {
 		album := album_path[i]
 
-		owns, err := user.OwnsAlbum(db, album) //这里注意一下
+		owns, err := user.OwnsAlbum(album) //这里注意一下
 		if err != nil {
 			return nil, err
 		}
@@ -194,7 +194,7 @@ func AlbumPath(db *gorm.DB, user *models.User, album *models.Album) ([]*models.A
 }
 
 //修改完
-func SetAlbumCover(db *gorm.DB, user *models.User, mediaID int) (*models.Album, error) {
+func SetAlbumCover(user *models.User, mediaID int) (*models.Album, error) {
 	var media models.Media
 	dataApi, _ := DataApi.NewDataApiClient()
 	//if err := db.Find(&media, mediaID).Error; err != nil {
@@ -243,7 +243,7 @@ func SetAlbumCover(db *gorm.DB, user *models.User, mediaID int) (*models.Album, 
 	album.PathHash = *res[0][6].StringValue
 	album.CoverID = DataApi.GetIntP(res, 0, 7)
 
-	ownsAlbum, err := user.OwnsAlbum(db, &album) //这里注意一下，还未修改
+	ownsAlbum, err := user.OwnsAlbum(&album) //这里注意一下，还未修改
 	if err != nil {
 		return nil, err
 	}
@@ -255,14 +255,14 @@ func SetAlbumCover(db *gorm.DB, user *models.User, mediaID int) (*models.Album, 
 	//if err := db.Model(&album).Update("cover_id", mediaID).Error; err != nil {
 	//	return nil, err
 	//}
-	sql_albums_up := fmt.Sprintf("update album set cover_id=%v where id =%v", mediaID, album.ID)
+	sql_albums_up := fmt.Sprintf("update albums set cover_id=%v where id =%v", mediaID, album.ID)
 	dataApi.ExecuteSQl(sql_albums_up)
 	album.CoverID = &mediaID
 	return &album, nil
 }
 
 //修改完
-func ResetAlbumCover(db *gorm.DB, user *models.User, albumID int) (*models.Album, error) {
+func ResetAlbumCover(user *models.User, albumID int) (*models.Album, error) {
 	var album models.Album
 	//if err := db.Find(&album, albumID).Error; err != nil {
 	//	return nil, err
@@ -278,7 +278,7 @@ func ResetAlbumCover(db *gorm.DB, user *models.User, albumID int) (*models.Album
 	album.Path = *res[0][5].StringValue
 	album.PathHash = *res[0][6].StringValue
 	album.CoverID = DataApi.GetIntP(res, 0, 7)
-	ownsAlbum, err := user.OwnsAlbum(db, &album) //这里注意一下还未修改
+	ownsAlbum, err := user.OwnsAlbum(&album) //这里注意一下还未修改
 	if err != nil {
 		return nil, err
 	}
@@ -290,7 +290,7 @@ func ResetAlbumCover(db *gorm.DB, user *models.User, albumID int) (*models.Album
 	//if err := db.Model(&album).Update("cover_id", nil).Error; err != nil {
 	//	return nil, err
 	//}
-	sql_albums_up := fmt.Sprintf("update album set cover_id=NULL where id =%v", albumID)
+	sql_albums_up := fmt.Sprintf("update albums set cover_id=NULL where id =%v", albumID)
 	dataApi.ExecuteSQl(sql_albums_up)
 	album.CoverID = nil
 	return &album, nil

@@ -1,5 +1,15 @@
 package database
 
+/*
+import (
+	"github.com/photoview/photoview/api/graphql/models"
+	"github.com/pkg/errors"
+	"gorm.io/gorm"
+	"log"
+	"strings"
+)
+
+
 import (
 	"fmt"
 	"log"
@@ -194,3 +204,4 @@ func migrate_exif_fields_flash(db *gorm.DB) error {
 
 	return nil
 }
+*/

@@ -1,5 +1,6 @@
 package scanner_task
 
+//未改完
 import (
 	"context"
 	"database/sql"
@@ -40,11 +41,11 @@ type TaskContext struct {
 }
 
 //这里注意一下
-func NewTaskContext(parent context.Context, db *gorm.DB, album *models.Album, cache *scanner_cache.AlbumScannerCache) TaskContext {
+func NewTaskContext(parent context.Context /* db *gorm.DB*/, album *models.Album, cache *scanner_cache.AlbumScannerCache) TaskContext {
 	ctx := TaskContext{ctx: parent}
 	ctx = ctx.WithValue(taskCtxKeyAlbum, album)
 	ctx = ctx.WithValue(taskCtxKeyAlbumCache, cache)
-	ctx = ctx.WithDB(db)
+	//ctx = ctx.WithDB(db)
 
 	return ctx
 }

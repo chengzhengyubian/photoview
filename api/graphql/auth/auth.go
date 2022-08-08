@@ -1,5 +1,6 @@
 package auth
 
+/*修改完*/
 import (
 	"context"
 	"errors"
@@ -10,7 +11,7 @@ import (
 	"github.com/99designs/gqlgen/handler"
 	"github.com/photoview/photoview/api/dataloader"
 	"github.com/photoview/photoview/api/graphql/models"
-	"gorm.io/gorm"
+	//"gorm.io/gorm"
 )
 
 var ErrUnauthorized = errors.New("unauthorized")
@@ -24,7 +25,7 @@ type contextKey struct {
 }
 
 // Middleware decodes the share session cookie and packs the session into context
-func Middleware(db *gorm.DB) func(http.Handler) http.Handler {
+func Middleware( /*db *gorm.DB*/ ) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
@@ -72,7 +73,7 @@ func UserFromContext(ctx context.Context) *models.User {
 	return raw
 }
 
-func AuthWebsocketInit(db *gorm.DB) func(context.Context, handler.InitPayload) (context.Context, error) {
+func AuthWebsocketInit( /*db *gorm.DB*/ ) func(context.Context, handler.InitPayload) (context.Context, error) {
 	return func(ctx context.Context, initPayload handler.InitPayload) (context.Context, error) {
 
 		bearer, exists := initPayload["Authorization"].(string)

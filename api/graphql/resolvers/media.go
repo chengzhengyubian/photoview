@@ -1,5 +1,6 @@
 package resolvers
 
+//修改完
 import (
 	"context"
 	"encoding/json"
@@ -24,7 +25,7 @@ func (r *queryResolver) MyMedia(ctx context.Context, order *models.Ordering, pag
 		return nil, errors.New("unauthorized")
 	}
 
-	return actions.MyMedia(r.DB(ctx), user, order, paginate)
+	return actions.MyMedia(user, order, paginate)
 }
 
 //修改完，未测试
@@ -199,8 +200,14 @@ func (r *mediaResolver) Shares(ctx context.Context, media *models.Media) ([]*mod
 		ShareToken.UpdatedAt = time.Unix(*res[i][2].LongValue/1000, 0)
 		ShareToken.Value = DataApi.GetString(res, i, 3)
 		ShareToken.OwnerID = DataApi.GetInt(res, i, 4)
-		expire := time.Unix(*res[i][5].LongValue/1000, 0)
-		ShareToken.Expire = &expire
+		if DataApi.GetLongP(res, 0, 5) == nil {
+			ShareToken.Expire = nil
+		} else {
+			expire := time.Unix(DataApi.GetLong(res, 0, 5)/1000, 0)
+			ShareToken.Expire = &expire
+		}
+		//expire := time.Unix(DataApi.GetLongP(res,0,5)/1000, 0)
+		//ShareToken.Expire = &expire
 		ShareToken.Password = DataApi.GetStringP(res, i, 6)
 		ShareToken.AlbumID = DataApi.GetIntP(res, i, 7)
 		ShareToken.MediaID = DataApi.GetIntP(res, i, 8)
@@ -300,9 +307,9 @@ func (r *mediaResolver) Exif(ctx context.Context, media *models.Media) (*models.
 		return media.Exif, nil
 	}
 	var exif models.MediaEXIF
-	if err := r.DB(ctx).Model(&media).Association("Exif").Find(&exif); err != nil {
-		return nil, err
-	}
+	//if err := r.DB(ctx).Model(&media).Association("Exif").Find(&exif); err != nil {
+	//	return nil, err
+	//}
 	sql_media_exif_select := fmt.Sprintf("select media_exif.* from media_exif left join media on media.exif_id=media.exif_id and media.id=%v order by media.exif_id limit 1", media.ID)
 	dataApi, _ := DataApi.NewDataApiClient()
 	res, err := dataApi.Query(sql_media_exif_select)
@@ -354,7 +361,7 @@ func (r *mutationResolver) FavoriteMedia(ctx context.Context, mediaID int, favor
 		return nil, auth.ErrUnauthorized
 	}
 
-	return user.FavoriteMedia(r.DB(ctx), mediaID, favorite)
+	return user.FavoriteMedia( /*r.DB(ctx), */ mediaID, favorite)
 }
 
 //修改完，未测试
@@ -368,9 +375,9 @@ func (r *mediaResolver) Faces(ctx context.Context, media *models.Media) ([]*mode
 	}
 
 	var faces []*models.ImageFace
-	if err := r.DB(ctx).Model(&media).Association("Faces").Find(&faces); err != nil {
-		return nil, err
-	}
+	//if err := r.DB(ctx).Model(&media).Association("Faces").Find(&faces); err != nil {
+	//	return nil, err
+	//}
 
 	sql_image_faces_select := fmt.Sprintf("select image_faces.* from image_faces left join media on image_faces.media_id=media.id where media.id=%v", media.ID)
 	dataApi, _ := DataApi.NewDataApiClient()

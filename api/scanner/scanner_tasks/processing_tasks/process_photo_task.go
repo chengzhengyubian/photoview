@@ -35,7 +35,7 @@ func (t ProcessPhotoTask) ProcessMedia(ctx scanner_task.TaskContext, mediaData *
 
 	log.Printf("Processing photo: %s\n", photo.Path)
 
-	photoURLFromDB := makePhotoURLChecker(ctx.GetDB(), photo.ID)
+	photoURLFromDB := makePhotoURLChecker( /*ctx.GetDB(),*/ photo.ID)
 
 	// original photo url
 	origURL, err := photoURLFromDB(models.MediaOriginal)
@@ -103,7 +103,7 @@ func (t ProcessPhotoTask) ProcessMedia(ctx scanner_task.TaskContext, mediaData *
 			}
 		}
 
-		original, err := saveOriginalPhotoToDB(ctx.GetDB(), photo, mediaData, photoDimensions)
+		original, err := saveOriginalPhotoToDB( /*ctx.GetDB(), */ photo, mediaData, photoDimensions)
 		if err != nil {
 			return []*models.MediaURL{}, errors.Wrap(err, "saving original photo to database")
 		}

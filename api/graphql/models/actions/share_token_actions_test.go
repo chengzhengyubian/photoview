@@ -62,7 +62,7 @@ func TestShareToken(t *testing.T) {
 	var albumShare *models.ShareToken
 
 	t.Run("Add album share", func(t *testing.T) {
-		share, err := actions.AddAlbumShare(db, user, rootAlbum.ID, &expireTime, nil)
+		share, err := actions.AddAlbumShare(user, rootAlbum.ID, &expireTime, nil)
 		albumShare = share
 
 		assert.NoError(t, err)
@@ -74,7 +74,7 @@ func TestShareToken(t *testing.T) {
 	})
 
 	t.Run("Add media share", func(t *testing.T) {
-		share, err := actions.AddMediaShare(db, user, media[0].ID, &expireTime, &sharePassword)
+		share, err := actions.AddMediaShare(user, media[0].ID, &expireTime, &sharePassword)
 		mediaShare = share
 
 		assert.NoError(t, err)
@@ -86,7 +86,7 @@ func TestShareToken(t *testing.T) {
 	})
 
 	t.Run("Delete share token", func(t *testing.T) {
-		deletedShare, err := actions.DeleteShareToken(db, user.ID, mediaShare.Value)
+		deletedShare, err := actions.DeleteShareToken(user.ID, mediaShare.Value)
 
 		assert.NoError(t, err)
 		assert.Equal(t, mediaShare.ID, deletedShare.ID)
@@ -96,11 +96,11 @@ func TestShareToken(t *testing.T) {
 
 		assert.Empty(t, albumShare.Password)
 
-		share, err := actions.ProtectShareToken(db, user.ID, albumShare.Value, &sharePassword)
+		share, err := actions.ProtectShareToken(user.ID, albumShare.Value, &sharePassword)
 		assert.NoError(t, err)
 		assert.NotEmpty(t, share.Password)
 
-		share, err = actions.ProtectShareToken(db, user.ID, albumShare.Value, nil)
+		share, err = actions.ProtectShareToken(user.ID, albumShare.Value, nil)
 		assert.NoError(t, err)
 		assert.Empty(t, share.Password)
 	})

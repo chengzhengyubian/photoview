@@ -11,11 +11,11 @@ import (
 )
 
 func TestUserRegistrationAuthorization(t *testing.T) {
-	db := test_utils.DatabaseTest(t)
+	//db := test_utils.DatabaseTest(t)
 
 	t.Run("Register user", func(t *testing.T) {
 		password := "1234"
-		user, err := models.RegisterUser(db, "admin", &password, true)
+		user, err := models.RegisterUser("admin", &password, true)
 		if !assert.NoError(t, err) {
 			return
 		}
@@ -28,7 +28,7 @@ func TestUserRegistrationAuthorization(t *testing.T) {
 	})
 
 	t.Run("Authorize user", func(t *testing.T) {
-		user, err := models.AuthorizeUser(db, "admin", "1234")
+		user, err := models.AuthorizeUser("admin", "1234")
 		if !assert.NoError(t, err) {
 			return
 		}
@@ -38,11 +38,11 @@ func TestUserRegistrationAuthorization(t *testing.T) {
 	})
 
 	t.Run("Authorize invalid credentials", func(t *testing.T) {
-		user, err := models.AuthorizeUser(db, "invalid_username", "1234")
+		user, err := models.AuthorizeUser("invalid_username", "1234")
 		assert.ErrorIs(t, err, models.ErrorInvalidUserCredentials)
 		assert.Nil(t, user)
 
-		user, err = models.AuthorizeUser(db, "admin", "invalid_password")
+		user, err = models.AuthorizeUser("admin", "invalid_password")
 		assert.ErrorIs(t, err, models.ErrorInvalidUserCredentials)
 		assert.Nil(t, user)
 	})
@@ -62,7 +62,7 @@ func TestAccessToken(t *testing.T) {
 		return
 	}
 
-	access_token, err := user.GenerateAccessToken(db)
+	access_token, err := user.GenerateAccessToken()
 	if !assert.NoError(t, err) {
 		return
 	}
@@ -160,13 +160,13 @@ func TestUserOwnsAlbum(t *testing.T) {
 	}
 
 	for _, album := range albums {
-		owns, err := user.OwnsAlbum(db, &album)
+		owns, err := user.OwnsAlbum( /*db, */ &album)
 		assert.NoError(t, err)
 		assert.True(t, owns)
 	}
 
 	for _, album := range sub_albums {
-		owns, err := user.OwnsAlbum(db, &album)
+		owns, err := user.OwnsAlbum( /*db,*/ &album)
 		assert.NoError(t, err)
 		assert.True(t, owns)
 	}
@@ -180,7 +180,7 @@ func TestUserOwnsAlbum(t *testing.T) {
 		return
 	}
 
-	owns, err := user.OwnsAlbum(db, &separate_album)
+	owns, err := user.OwnsAlbum( /*db, */ &separate_album)
 	assert.NoError(t, err)
 	assert.False(t, owns)
 }
@@ -188,7 +188,7 @@ func TestUserOwnsAlbum(t *testing.T) {
 func TestUserFavoriteMedia(t *testing.T) {
 	db := test_utils.DatabaseTest(t)
 
-	user, err := models.RegisterUser(db, "user1", nil, false)
+	user, err := models.RegisterUser( /*db, */ "user1", nil, false)
 	assert.NoError(t, err)
 
 	rootAlbum := models.Album{
@@ -216,7 +216,7 @@ func TestUserFavoriteMedia(t *testing.T) {
 	assert.NoError(t, err)
 	assert.False(t, favourite)
 
-	favMedia, err := user.FavoriteMedia(db, media.ID, true)
+	favMedia, err := user.FavoriteMedia( /*db, */ media.ID, true)
 	assert.NoError(t, err)
 	assert.NotNil(t, favMedia)
 

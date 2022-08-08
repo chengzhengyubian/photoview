@@ -1,10 +1,9 @@
 package models
 
+//修改完
 import (
 	DataApi "github.com/photoview/photoview/api/dataapi"
-	db_drivers "github.com/photoview/photoview/api/database/drivers"
 	"github.com/pkg/errors"
-	"gorm.io/gorm"
 	"strconv"
 )
 
@@ -19,11 +18,11 @@ func (SiteInfo) TableName() string {
 }
 
 //	这里关注一下
-func DefaultSiteInfo(db *gorm.DB) SiteInfo {
+func DefaultSiteInfo( /*db *gorm.DB*/ ) SiteInfo {
 	defaultConcurrentWorkers := 3
-	if db_drivers.SQLITE.MatchDatabase(db) {
+	/*if db_drivers.SQLITE.MatchDatabase(db) {
 		defaultConcurrentWorkers = 1
-	}
+	}*/
 
 	return SiteInfo{
 		InitialSetup:         true,
@@ -34,7 +33,7 @@ func DefaultSiteInfo(db *gorm.DB) SiteInfo {
 
 // GetSiteInfo gets the site info row from the database, and creates it if it does not exist
 //修改中，还剩下一部分没测试
-func GetSiteInfo(db *gorm.DB) (*SiteInfo, error) {
+func GetSiteInfo( /*db *gorm.DB*/ ) (*SiteInfo, error) {
 
 	var siteInfo []*SiteInfo
 
@@ -58,7 +57,7 @@ func GetSiteInfo(db *gorm.DB) (*SiteInfo, error) {
 		siteInfo = append(siteInfo, &siteinfo)
 	}
 	if len(siteInfo) == 0 {
-		newSiteInfo := DefaultSiteInfo(db) //初始化一张表,这里还没改
+		newSiteInfo := DefaultSiteInfo( /*db*/ ) //初始化一张表,这里还没改
 		var setup int
 		if newSiteInfo.InitialSetup == true {
 			setup = 1

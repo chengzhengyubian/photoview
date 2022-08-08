@@ -13,12 +13,11 @@ import (
 	"github.com/photoview/photoview/api/scanner/media_encoding/media_utils"
 	"github.com/photoview/photoview/api/utils"
 	"github.com/pkg/errors"
-	"gorm.io/gorm"
 )
 
 //修改完
 // Higher order function used to check if MediaURL for a given MediaPurpose exists
-func makePhotoURLChecker(tx *gorm.DB, mediaID int) func(purpose models.MediaPurpose) (*models.MediaURL, error) {
+func makePhotoURLChecker( /*tx *gorm.DB, */ mediaID int) func(purpose models.MediaPurpose) (*models.MediaURL, error) {
 	return func(purpose models.MediaPurpose) (*models.MediaURL, error) {
 		var mediaURL []*models.MediaURL
 		// SELECT * FROM `media_urls` WHERE purpose = 'high-res' AND media_id = 2
@@ -96,7 +95,7 @@ func generateUniqueMediaName(mediaPath string) string {
 }
 
 //修改完
-func saveOriginalPhotoToDB(tx *gorm.DB, photo *models.Media, imageData *media_encoding.EncodeMediaData, photoDimensions *media_utils.PhotoDimensions) (*models.MediaURL, error) {
+func saveOriginalPhotoToDB( /*tx *gorm.DB,*/ photo *models.Media, imageData *media_encoding.EncodeMediaData, photoDimensions *media_utils.PhotoDimensions) (*models.MediaURL, error) {
 	originalImageName := generateUniqueMediaName(photo.Path)
 
 	contentType, err := imageData.ContentType()

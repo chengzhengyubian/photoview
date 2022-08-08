@@ -8,14 +8,13 @@ import (
 
 	"github.com/photoview/photoview/api/graphql/models"
 	"github.com/photoview/photoview/api/scanner/scanner_queue"
-	"gorm.io/gorm"
 )
 
 type periodicScanner struct {
 	ticker         *time.Ticker
 	ticker_changed chan bool
 	mutex          *sync.Mutex
-	db             *gorm.DB
+	/**/ /*db *gorm.DB*/
 }
 
 var mainPeriodicScanner *periodicScanner = nil
@@ -38,7 +37,7 @@ func getPeriodicScanInterval() (time.Duration, error) {
 	return time.Duration(siteInfo.PeriodicScanInterval) * time.Second, nil
 }
 
-func InitializePeriodicScanner(db *gorm.DB) error {
+func InitializePeriodicScanner( /*db *gorm.DB*/ ) error {
 	if mainPeriodicScanner != nil {
 		panic("periodic scanner has already been initialized")
 	}
@@ -49,7 +48,7 @@ func InitializePeriodicScanner(db *gorm.DB) error {
 	}
 
 	mainPeriodicScanner = &periodicScanner{
-		db:             db,
+		//db:             db,
 		ticker_changed: make(chan bool),
 		mutex:          &sync.Mutex{},
 	}

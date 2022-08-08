@@ -1,8 +1,10 @@
 package scanner_queue
 
+//修改完
 import (
 	"context"
 	"fmt"
+	"gorm.io/gorm"
 	"log"
 	"sync"
 	"time"
@@ -15,7 +17,7 @@ import (
 	"github.com/photoview/photoview/api/scanner/scanner_utils"
 	"github.com/photoview/photoview/api/utils"
 	"github.com/pkg/errors"
-	"gorm.io/gorm"
+	//"gorm.io/gorm"
 )
 
 // ScannerJob describes a job on the queue to be run by the scanner over a single album
@@ -31,7 +33,7 @@ func NewScannerJob(ctx scanner_task.TaskContext) ScannerJob {
 	}
 }
 
-func (job *ScannerJob) Run(db *gorm.DB) {
+func (job *ScannerJob) Run( /*db *gorm.DB*/ ) {
 	scanner.ScanAlbum(job.ctx)
 }
 
@@ -52,11 +54,11 @@ type ScannerQueue struct {
 
 var global_scanner_queue ScannerQueue
 
-func InitializeScannerQueue(db *gorm.DB) error {
+func InitializeScannerQueue( /*db *gorm.DB*/ ) error {
 
 	var concurrentWorkers int
 	{
-		site_info, err := models.GetSiteInfo(db)
+		site_info, err := models.GetSiteInfo( /*db*/ )
 		if err != nil {
 			return errors.Wrap(err, "get current workers from database")
 		}
@@ -69,10 +71,10 @@ func InitializeScannerQueue(db *gorm.DB) error {
 		idle_chan:   make(chan bool, 1),
 		in_progress: make([]ScannerJob, 0),
 		up_next:     make([]ScannerJob, 0),
-		db:          db,
-		settings:    ScannerQueueSettings{max_concurrent_tasks: concurrentWorkers},
-		close_chan:  nil,
-		running:     true,
+		//	db:          db,
+		settings:   ScannerQueueSettings{max_concurrent_tasks: concurrentWorkers},
+		close_chan: nil,
+		running:    true,
 	}
 
 	go global_scanner_queue.startBackgroundWorker()
@@ -141,7 +143,7 @@ func (queue *ScannerQueue) processQueue(notifyThrottle *utils.Throttle) {
 
 		go func() {
 			log.Println("Starting job")
-			nextJob.Run(queue.db)
+			nextJob.Run( /*queue.db*/ )
 			log.Println("Job finished")
 
 			// Delete finished job from queue
@@ -173,7 +175,7 @@ func (queue *ScannerQueue) processQueue(notifyThrottle *utils.Throttle) {
 			Positive: true,
 		})
 
-		if err := scanner.GenerateBlurhashes(queue.db); err != nil {
+		if err := scanner.GenerateBlurhashes( /*queue.db*/ ); err != nil {
 			scanner_utils.ScannerError("Failed to generate blurhashes: %v", err)
 		}
 
@@ -227,7 +229,7 @@ func AddAllToQueue() error {
 // Function does not block.
 func AddUserToQueue(user *models.User) error {
 	album_cache := scanner_cache.MakeAlbumCache()
-	albums, album_errors := scanner.FindAlbumsForUser(global_scanner_queue.db, user, album_cache)
+	albums, album_errors := scanner.FindAlbumsForUser( /*global_scanner_queue.db, */ user, album_cache)
 	for _, err := range album_errors {
 		return errors.Wrapf(err, "find albums for user (user_id: %d)", user.ID)
 	}
@@ -235,7 +237,7 @@ func AddUserToQueue(user *models.User) error {
 	global_scanner_queue.mutex.Lock()
 	for _, album := range albums {
 		global_scanner_queue.addJob(&ScannerJob{
-			ctx: scanner_task.NewTaskContext(context.Background(), global_scanner_queue.db, album, album_cache),
+			ctx: scanner_task.NewTaskContext(context.Background() /* global_scanner_queue.db,*/, album, album_cache),
 		})
 	}
 	global_scanner_queue.mutex.Unlock()

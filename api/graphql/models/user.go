@@ -1,5 +1,6 @@
 package models
 
+//修改完
 import (
 	"crypto/rand"
 	"encoding/json"
@@ -12,7 +13,6 @@ import (
 
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/bcrypt"
-	"gorm.io/gorm"
 )
 
 type User struct {
@@ -51,7 +51,7 @@ type UserPreferences struct {
 	Language *LanguageTranslation
 }
 
-func (u *UserPreferences) BeforeSave(tx *gorm.DB) error {
+func (u *UserPreferences) BeforeSave( /*tx *gorm.DB*/ ) error {
 
 	if u.Language != nil && *u.Language == "" {
 		u.Language = nil
@@ -223,7 +223,7 @@ func (user *User) FillAlbums() error {
 }
 
 //这里还未改,应该是递归
-func (user *User) OwnsAlbum(db *gorm.DB, album *Album) (bool, error) {
+func (user *User) OwnsAlbum(album *Album) (bool, error) {
 
 	if err := user.FillAlbums(); err != nil {
 		return false, err
@@ -242,7 +242,7 @@ func (user *User) OwnsAlbum(db *gorm.DB, album *Album) (bool, error) {
 	filter := func(sql string) string {
 		return sql + fmt.Sprintf(" where id in (%v)", albumids)
 	}
-	ownedParents, err := album.GetParents(db, filter)
+	ownedParents, err := album.GetParents(filter)
 	if err != nil {
 		return false, err
 	}
@@ -251,7 +251,7 @@ func (user *User) OwnsAlbum(db *gorm.DB, album *Album) (bool, error) {
 }
 
 // FavoriteMedia sets/clears a media as favorite for the user//修改了一下
-func (user *User) FavoriteMedia(db *gorm.DB, mediaID int, favorite bool) (*Media, error) {
+func (user *User) FavoriteMedia( /*db *gorm.DB,*/ mediaID int, favorite bool) (*Media, error) {
 	var fav int
 	if favorite == true {
 		fav = 1

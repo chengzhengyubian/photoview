@@ -16,7 +16,6 @@ import (
 	graphql_endpoint "github.com/photoview/photoview/api/graphql/endpoint"
 	"github.com/photoview/photoview/api/routes"
 	"github.com/photoview/photoview/api/scanner/exif"
-	"github.com/photoview/photoview/api/scanner/face_detection"
 	"github.com/photoview/photoview/api/scanner/media_encoding/executable_worker"
 	"github.com/photoview/photoview/api/scanner/periodic_scanner"
 	"github.com/photoview/photoview/api/scanner/scanner_queue"
@@ -46,11 +45,11 @@ func main() {
 	//	log.Panicf("Could not migrate database: %s\n", err)
 	//}
 
-	if err := scanner_queue.InitializeScannerQueue(db); err != nil {
+	if err := scanner_queue.InitializeScannerQueue( /*db*/ ); err != nil {
 		log.Panicf("Could not initialize scanner queue: %s\n", err)
 	}
 
-	if err := periodic_scanner.InitializePeriodicScanner(db); err != nil {
+	if err := periodic_scanner.InitializePeriodicScanner( /*db*/ ); err != nil {
 		log.Panicf("Could not initialize periodic scanner: %s", err)
 	}
 
@@ -58,14 +57,14 @@ func main() {
 
 	exif.InitializeEXIFParser()
 
-	if err := face_detection.InitializeFaceDetector(db); err != nil {
-		log.Panicf("Could not initialize face detector: %s\n", err)
-	}
+	//if err := face_detection.InitializeFaceDetector(db); err != nil {
+	//	log.Panicf("Could not initialize face detector: %s\n", err)
+	//}
 
 	rootRouter := mux.NewRouter()
 
-	rootRouter.Use(dataloader.Middleware(db))
-	rootRouter.Use(auth.Middleware(db))
+	rootRouter.Use(dataloader.Middleware( /*db*/ ))
+	rootRouter.Use(auth.Middleware( /*db*/ ))
 	rootRouter.Use(server.LoggingMiddleware)
 	rootRouter.Use(server.CORSMiddleware(devMode))
 
@@ -84,13 +83,13 @@ func main() {
 	endpointRouter.Handle("/graphql", graphql_endpoint.GraphqlEndpoint(db))
 
 	photoRouter := endpointRouter.PathPrefix("/photo").Subrouter()
-	routes.RegisterPhotoRoutes(db, photoRouter)
+	routes.RegisterPhotoRoutes( /*db, */ photoRouter)
 
 	videoRouter := endpointRouter.PathPrefix("/video").Subrouter()
-	routes.RegisterVideoRoutes(db, videoRouter)
+	routes.RegisterVideoRoutes( /*db, */ videoRouter)
 
 	downloadsRouter := endpointRouter.PathPrefix("/download").Subrouter()
-	routes.RegisterDownloadRoutes(db, downloadsRouter)
+	routes.RegisterDownloadRoutes( /*db, */ downloadsRouter)
 
 	shouldServeUI := utils.ShouldServeUI()
 

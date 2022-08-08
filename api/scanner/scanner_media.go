@@ -1,5 +1,6 @@
 package scanner
 
+/*修改完*/
 import (
 	"context"
 	"fmt"
@@ -10,7 +11,7 @@ import (
 	"github.com/photoview/photoview/api/scanner/scanner_task"
 	"github.com/photoview/photoview/api/scanner/scanner_tasks"
 	"github.com/pkg/errors"
-	"gorm.io/gorm"
+	//"gorm.io/gorm"
 	"log"
 	"os"
 	"path"
@@ -20,7 +21,7 @@ import (
 
 //
 
-func ScanMedia(tx *gorm.DB, mediaPath string, albumId int, cache *scanner_cache.AlbumScannerCache) (*models.Media, bool, error) {
+func ScanMedia( /*tx *gorm.DB, */ mediaPath string, albumId int, cache *scanner_cache.AlbumScannerCache) (*models.Media, bool, error) {
 	mediaName := path.Base(mediaPath)
 
 	{ // Check if media already exists
@@ -100,9 +101,9 @@ func ScanMedia(tx *gorm.DB, mediaPath string, albumId int, cache *scanner_cache.
 		DateShot: stat.ModTime(),
 	}
 	timestr := media.DateShot.Format("2006-01-02 15:04:05")
-	//if err := tx.Debug().Create(&media).Error; err != nil { //INSERT INTO `media` (`created_at`,`updated_at`,`title`,`path`,`path_hash`,`album_id`,`exif_id`,`date_shot`,`type`,`video_metadata_id`,`side_car_path`,`side_car_hash`,`blurhash`) VALUES ('2022-08-04 11:18:51.083','2022-08-04 11:18:51.083','自我介绍.png','/Users/chengbian/suiapp/photo/photoper/自我介绍.png','f9b6fd9b47d427178a9d22198dac7c9c',148,NULL,'2022-06-30 17:50:25.916','photo',NULL,NULL,NULL,NULL
-	//	return nil, false, errors.Wrap(err, "could not insert media into database")
-	//}
+	/*if err := tx.Debug().Create(&media).Error; err != nil { //INSERT INTO `media` (`created_at`,`updated_at`,`title`,`path`,`path_hash`,`album_id`,`exif_id`,`date_shot`,`type`,`video_metadata_id`,`side_car_path`,`side_car_hash`,`blurhash`) VALUES ('2022-08-04 11:18:51.083','2022-08-04 11:18:51.083','自我介绍.png','/Users/chengbian/suiapp/photo/photoper/自我介绍.png','f9b6fd9b47d427178a9d22198dac7c9c',148,NULL,'2022-06-30 17:50:25.916','photo',NULL,NULL,NULL,NULL
+		return nil, false, errors.Wrap(err, "could not insert media into database")
+	}*/
 	var Type string
 	if media.Type == models.MediaTypePhoto {
 		Type = "photo"
@@ -122,7 +123,7 @@ func ScanMedia(tx *gorm.DB, mediaPath string, albumId int, cache *scanner_cache.
 
 // ProcessSingleMedia processes a single media, might be used to reprocess media with corrupted cache
 // Function waits for processing to finish before returning.
-func ProcessSingleMedia(db *gorm.DB, media *models.Media) error {
+func ProcessSingleMedia( /*db *gorm.DB, */ media *models.Media) error {
 	album_cache := scanner_cache.MakeAlbumCache()
 
 	var album models.Album
@@ -146,7 +147,7 @@ func ProcessSingleMedia(db *gorm.DB, media *models.Media) error {
 	album.CoverID = DataApi.GetIntP(res, 0, 7)
 	media_data := media_encoding.NewEncodeMediaData(media)
 
-	task_context := scanner_task.NewTaskContext(context.Background(), db, &album, album_cache) //这里注意一下，这里还没改
+	task_context := scanner_task.NewTaskContext(context.Background() /*db,*/, &album, album_cache) //这里注意一下，这里还没改
 	new_ctx, err := scanner_tasks.Tasks.BeforeProcessMedia(task_context, &media_data)
 	if err != nil {
 		return err

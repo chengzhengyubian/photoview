@@ -1,5 +1,6 @@
 package resolvers
 
+//修改完
 import (
 	"context"
 	"encoding/json"
@@ -15,7 +16,7 @@ import (
 	"github.com/photoview/photoview/api/utils"
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/bcrypt"
-	"gorm.io/gorm"
+	//"gorm.io/gorm"
 	"log"
 	"os"
 	"path"
@@ -124,8 +125,8 @@ func (r *mutationResolver) AuthorizeUser(ctx context.Context, username string, p
 
 //修改中
 func (r *mutationResolver) InitialSetupWizard(ctx context.Context, username string, password string, rootPath string) (*models.AuthorizeResult, error) {
-	db := r.DB(ctx)
-	siteInfo, err := models.GetSiteInfo(db)
+	//db := r.DB(ctx)
+	siteInfo, err := models.GetSiteInfo( /*db*/ )
 	if err != nil {
 		return nil, err
 	}
@@ -137,8 +138,8 @@ func (r *mutationResolver) InitialSetupWizard(ctx context.Context, username stri
 	rootPath = path.Clean(rootPath)
 
 	var token *models.AccessToken
-
-	transactionError := db.Transaction(func(tx *gorm.DB) error {
+	{
+		//transactionError := db.Transaction(func(tx *gorm.DB) error {
 		//if err := tx.Exec("UPDATE site_info SET initial_setup = false").Error; err != nil {
 		//	return err
 		//}
@@ -151,28 +152,28 @@ func (r *mutationResolver) InitialSetupWizard(ctx context.Context, username stri
 		}
 		user, err := models.RegisterUser(username, &password, true)
 		if err != nil {
-			return err
+			return nil, err
 		}
 
-		_, err = scanner.NewRootAlbum(tx, rootPath, user)
+		_, err = scanner.NewRootAlbum(rootPath, user)
 		if err != nil {
-			return err
+			return nil, err
 		}
 
 		token, err = user.GenerateAccessToken()
 		if err != nil {
-			return err
+			return nil, err
 		}
 
-		return nil
-	})
-
-	if transactionError != nil {
-		return &models.AuthorizeResult{
-			Success: false,
-			Status:  err.Error(),
-		}, nil
+		//	return nil
+		//	})
 	}
+	//if transactionError != nil {
+	//	return &models.AuthorizeResult{
+	//		Success: false,
+	//		Status:  err.Error(),
+	//	}, nil
+	//}
 
 	return &models.AuthorizeResult{
 		Success: true,
@@ -343,12 +344,12 @@ func (r *mutationResolver) CreateUser(ctx context.Context, username string, pass
 }
 
 func (r *mutationResolver) DeleteUser(ctx context.Context, id int) (*models.User, error) {
-	return actions.DeleteUser(r.DB(ctx), id)
+	return actions.DeleteUser( /*r.DB(ctx),*/ id)
 }
 
 //修改完
 func (r *mutationResolver) UserAddRootPath(ctx context.Context, id int, rootPath string) (*models.Album, error) {
-	db := r.DB(ctx)
+	//db := r.DB(ctx)
 
 	rootPath = path.Clean(rootPath)
 
@@ -368,7 +369,7 @@ func (r *mutationResolver) UserAddRootPath(ctx context.Context, id int, rootPath
 		fmt.Println(res.Body.Data.Records[0][5].IsNull)
 		user.Admin = *res.Body.Data.Records[0][5].BooleanValue
 	}
-	newAlbum, err := scanner.NewRootAlbum(db, rootPath, &user)
+	newAlbum, err := scanner.NewRootAlbum(rootPath, &user)
 	if err != nil {
 		return nil, err
 	}

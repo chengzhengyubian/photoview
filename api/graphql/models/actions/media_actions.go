@@ -1,15 +1,15 @@
 package actions
 
+//修改完
 import (
 	"github.com/photoview/photoview/api/dataapi"
 	"github.com/photoview/photoview/api/graphql/models"
-	"gorm.io/gorm"
 	"strconv"
 	"time"
 )
 
 //修改完，未测试
-func MyMedia(db *gorm.DB, user *models.User, order *models.Ordering, paginate *models.Pagination) ([]*models.Media, error) {
+func MyMedia(user *models.User, order *models.Ordering, paginate *models.Pagination) ([]*models.Media, error) {
 	if err := user.FillAlbums(); err != nil {
 		return nil, err
 	}

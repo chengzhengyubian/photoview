@@ -1,5 +1,6 @@
 package models
 
+//修改完
 import (
 	"fmt"
 	"path"
@@ -9,7 +10,7 @@ import (
 
 	"github.com/photoview/photoview/api/utils"
 	"github.com/pkg/errors"
-	"gorm.io/gorm"
+	//"gorm.io/gorm"
 )
 
 type Media struct {
@@ -36,7 +37,7 @@ func (Media) TableName() string {
 	return "media"
 }
 
-func (m *Media) BeforeSave(tx *gorm.DB) error {
+func (m *Media) BeforeSave( /*tx *gorm.DB*/ ) error {
 	// Update path hash
 	m.PathHash = MD5Hash(m.Path)
 
