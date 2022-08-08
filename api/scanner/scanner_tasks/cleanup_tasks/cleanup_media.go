@@ -25,6 +25,7 @@ func CleanupMedia( /*db *gorm.DB, */ albumId int, albumMedia []*models.Media) []
 	for i, media := range albumMedia {
 		albumMediaIds[i] = media.ID
 	}
+	fmt.Println(albumId, albumMediaIds)
 	var sql_media_se string
 	// Will get from database
 	var mediaList []models.Media
@@ -92,7 +93,7 @@ func CleanupMedia( /*db *gorm.DB, */ albumId int, albumMedia []*models.Media) []
 		//删除media
 		sql_media_de := fmt.Sprintf("DELETE FROM `media` WHERE id IN (%v)", mediaids)
 		dataApi.ExecuteSQl(sql_media_de)
-
+		fmt.Println("删除media", mediaids)
 		// Reload faces after deleting media
 		/*if face_detection.GlobalFaceDetector != nil {
 			if err := face_detection.GlobalFaceDetector.ReloadFacesFromDatabase(db); err != nil {

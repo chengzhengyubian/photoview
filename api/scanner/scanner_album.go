@@ -208,7 +208,6 @@ func ScanAlbum(ctx scanner_task.TaskContext) error {
 			return errors.Wrap(err, "after process media")
 		}
 	}
-
 	if err := scanner_tasks.Tasks.AfterScanAlbum(ctx, changedMedia, albumMedia); err != nil {
 		return errors.Wrap(err, "after scan album")
 	}

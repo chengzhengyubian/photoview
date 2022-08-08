@@ -113,9 +113,12 @@ func ScanMedia( /*tx *gorm.DB, */ mediaPath string, albumId int, cache *scanner_
 	//sql_media_in := "insert into media (created_at, updated_at,title,path, path_hash,album_id, date_shot,type) values(NOW(),NOW(),\"" + media.Title + "\",\"" + media.Path + "\",\"" + models.MD5Hash(media.Path) + "\"," + strconv.Itoa(media.AlbumID) + ",\"" + timestr + "\",\"" + Type + "\")"
 	sql_media_in := fmt.Sprintf("insert into media (created_at, updated_at,title,path, path_hash,album_id, date_shot,type) values(NOW(),NOW(),'%v','%v','%v',%v,'%v','%v')", media.Title, media.Path, models.MD5Hash(media.Path), media.AlbumID, timestr, Type)
 	//sql_media_urls_in := fmt.Sprintf("insert into media_urls(created_at, updated_at,media_id,media_name,)")
+	sql_media_se := fmt.Sprintf("select id from media where path_hash='%v'", models.MD5Hash(media.Path))
 	dataApi, _ := DataApi.NewDataApiClient()
 	time.Sleep(time.Second * 1)
 	dataApi.ExecuteSQl(sql_media_in)
+	res, err := dataApi.Query(sql_media_se)
+	media.ID = DataApi.GetInt(res, 0, 0)
 	return &media, true, nil
 }
 
