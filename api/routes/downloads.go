@@ -30,7 +30,7 @@ func RegisterDownloadRoutes( /*db *gorm.DB,*/ router *mux.Router) {
 			w.Write([]byte("404"))
 			return
 		}*/
-		sql_albums_se := fmt.Sprintf("select * from album where id=%v", albumID)
+		sql_albums_se := fmt.Sprintf("select * from albums where id=%v", albumID)
 		dataApi, _ := DataApi.NewDataApiClient()
 		res, _ := dataApi.Query(sql_albums_se)
 		album.ID = DataApi.GetInt(res, 0, 0)
