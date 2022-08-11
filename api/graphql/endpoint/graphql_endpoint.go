@@ -12,11 +12,10 @@ import (
 	"github.com/photoview/photoview/api/graphql/resolvers"
 	"github.com/photoview/photoview/api/server"
 	"github.com/photoview/photoview/api/utils"
-	"gorm.io/gorm"
 )
 
-func GraphqlEndpoint(db *gorm.DB) *graphql_handler.Server {
-	graphqlResolver := resolvers.NewRootResolver(db)
+func GraphqlEndpoint( /*db *gorm.DB*/ ) *graphql_handler.Server {
+	graphqlResolver := resolvers.NewRootResolver( /*db*/ )
 	graphqlDirective := photoview_graphql.DirectiveRoot{}
 	graphqlDirective.IsAdmin = photoview_graphql.IsAdmin
 	graphqlDirective.IsAuthorized = photoview_graphql.IsAuthorized

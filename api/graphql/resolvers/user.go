@@ -379,7 +379,7 @@ func (r *mutationResolver) UserAddRootPath(ctx context.Context, id int, rootPath
 
 //未改完有问题,去掉事务之后可以
 func (r *mutationResolver) UserRemoveRootAlbum(ctx context.Context, userID int, albumID int) (*models.Album, error) {
-	db := r.DB(ctx)
+	//db := r.DB(ctx)
 	var album models.Album
 	//if err := db.First(&album, albumID).Error; err != nil { //SELECT * FROM `albums` WHERE `albums`.`id` = 110 ORDER BY `albums`.`id` LIMIT 1
 	//	return nil, err
@@ -464,7 +464,7 @@ func (r *mutationResolver) UserRemoveRootAlbum(ctx context.Context, userID int, 
 		}
 		// Reload faces as media might have been deleted
 		if face_detection.GlobalFaceDetector != nil {
-			if err := face_detection.GlobalFaceDetector.ReloadFacesFromDatabase(db); err != nil {
+			if err := face_detection.GlobalFaceDetector.ReloadFacesFromDatabase( /*db*/ ); err != nil {
 				return nil, err
 			}
 		}

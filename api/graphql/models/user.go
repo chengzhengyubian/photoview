@@ -128,14 +128,20 @@ func RegisterUser(username string, password *string, admin bool) (*User, error) 
 	} else {
 		ad = 0
 	}
-	user.Admin = admin
-	user.Username = username
-	user.Password = password
+	//user.Admin = admin
+	//user.Username = username
+	//user.Password = password
 	var sql_users_in string
+	var pass string
 	if password != nil {
-		sql_users_in = "insert into users (username,password,admin) values (\"" + username + "\",\"" + *password + "\"," + strconv.Itoa(ad) + ")"
+		pass = *user.Password
+	}
+	if password != nil {
+		//sql_users_in = "insert into users (username,password,admin) values (\"" + username + "\",\"" + *password + "\"," + strconv.Itoa(ad) + ")"
+		sql_users_in = fmt.Sprintf("insert into users (created_at,updated_at,username,password,admin) values(NOW(),NOW(),'%v','%v',%v)", username, pass, ad)
 	} else {
-		sql_users_in = "insert into users (username,admin) values (\"" + username + "\"," + strconv.Itoa(ad) + ")"
+		//sql_users_in = "insert into users (username,admin) values (\"" + username + "\"," + strconv.Itoa(ad) + ")"
+		sql_users_in = fmt.Sprintf("insert into users (created_at,updated_at,username,admin) values(NOW(),NOW(),'%v',%v)", username, ad)
 	}
 	dataApi, _ := DataApi.NewDataApiClient()
 	res, err := dataApi.ExecuteSQl(sql_users_in)

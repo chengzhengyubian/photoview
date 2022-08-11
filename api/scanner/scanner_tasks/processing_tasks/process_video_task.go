@@ -3,18 +3,19 @@ package processing_tasks
 import (
 	"context"
 	"fmt"
+	"github.com/photoview/photoview/api/dataapi"
+	"github.com/photoview/photoview/api/graphql/models"
+	"github.com/photoview/photoview/api/scanner/media_encoding"
+	"github.com/photoview/photoview/api/scanner/media_encoding/executable_worker"
+	"github.com/photoview/photoview/api/scanner/media_encoding/media_utils"
+	"github.com/photoview/photoview/api/utils"
 	"log"
 	"os"
 	"path"
 	"strings"
 	"time"
 
-	"github.com/photoview/photoview/api/graphql/models"
-	"github.com/photoview/photoview/api/scanner/media_encoding"
-	"github.com/photoview/photoview/api/scanner/media_encoding/executable_worker"
-	"github.com/photoview/photoview/api/scanner/media_encoding/media_utils"
 	"github.com/photoview/photoview/api/scanner/scanner_task"
-	"github.com/photoview/photoview/api/utils"
 	"github.com/pkg/errors"
 	"gopkg.in/vansante/go-ffprobe.v2"
 )
@@ -27,7 +28,7 @@ func (t ProcessVideoTask) ProcessMedia(ctx scanner_task.TaskContext, mediaData *
 	if mediaData.Media.Type != models.MediaTypeVideo {
 		return []*models.MediaURL{}, nil
 	}
-
+	dataApi, _ := dataapi.NewDataApiClient()
 	updatedURLs := make([]*models.MediaURL, 0)
 	video := mediaData.Media
 
@@ -79,10 +80,11 @@ func (t ProcessVideoTask) ProcessMedia(ctx scanner_task.TaskContext, mediaData *
 			FileSize:    fileStats.Size(),
 		}
 
-		if err := ctx.GetDB().Create(&mediaURL).Error; err != nil {
-			return []*models.MediaURL{}, errors.Wrapf(err, "insert original video into database (%s)", video.Title)
-		}
-
+		//if err := ctx.GetDB().Create(&mediaURL).Error; err != nil {
+		//	return []*models.MediaURL{}, errors.Wrapf(err, "insert original video into database (%s)", video.Title)
+		//}
+		sql_media_media_urls := fmt.Sprintf("insert into media_urls (created_at,updated_at,media_id,media_name,width,height,purpose,content_type,file_size) values(NOW(),NOW(),%v,'%v',%v,%v,'%v','%v',%v)", mediaURL.MediaID, mediaURL.MediaName, mediaURL.Width, mediaURL.Height, "original", mediaURL.ContentType, int(mediaURL.FileSize))
+		dataApi.Query(sql_media_media_urls)
 		updatedURLs = append(updatedURLs, &mediaURL)
 	}
 
@@ -119,11 +121,11 @@ func (t ProcessVideoTask) ProcessMedia(ctx scanner_task.TaskContext, mediaData *
 			FileSize:    fileStats.Size(),
 		}
 
-		//未修改
-		if err := ctx.GetDB().Create(&mediaURL).Error; err != nil {
-			return []*models.MediaURL{}, errors.Wrapf(err, "failed to insert encoded web-video into database (%s)", video.Title)
-		}
-
+		//if err := ctx.GetDB().Create(&mediaURL).Error; err != nil {
+		//	return []*models.MediaURL{}, errors.Wrapf(err, "failed to insert encoded web-video into database (%s)", video.Title)
+		//}
+		sql_media_media_urls := fmt.Sprintf("insert into media_urls (created_at,updated_at,media_id,media_name,width,height,purpose,content_type,file_size) values(NOW(),NOW(),%v,'%v',%v,%v,'%v','%v',%v)", mediaURL.MediaID, mediaURL.MediaName, mediaURL.Width, mediaURL.Height, "video-web", mediaURL.ContentType, int(mediaURL.FileSize))
+		dataApi.ExecuteSQl(sql_media_media_urls)
 		updatedURLs = append(updatedURLs, &mediaURL)
 	}
 
@@ -165,11 +167,11 @@ func (t ProcessVideoTask) ProcessMedia(ctx scanner_task.TaskContext, mediaData *
 			FileSize:    fileStats.Size(),
 		}
 
-		//未修改
-		if err := ctx.GetDB().Create(&thumbMediaURL).Error; err != nil {
-			return []*models.MediaURL{}, errors.Wrapf(err, "failed to insert video thumbnail image into database (%s)", video.Title)
-		}
-
+		//if err := ctx.GetDB().Create(&thumbMediaURL).Error; err != nil {
+		//	return []*models.MediaURL{}, errors.Wrapf(err, "failed to insert video thumbnail image into database (%s)", video.Title)
+		//}
+		sql_media_media_urls := fmt.Sprintf("insert into media_urls (created_at,updated_at,media_id,media_name,width,height,purpose,content_type,file_size) values(NOW(),NOW(),%v,'%v',%v,%v,'%v','%v',%v)", thumbMediaURL.MediaID, thumbMediaURL.MediaName, thumbMediaURL.Width, thumbMediaURL.Height, "video-thumbnail", thumbMediaURL.ContentType, int(thumbMediaURL.FileSize))
+		dataApi.ExecuteSQl(sql_media_media_urls)
 		updatedURLs = append(updatedURLs, &thumbMediaURL)
 	} else {
 		// Verify that video thumbnail still exists in cache
@@ -198,10 +200,11 @@ func (t ProcessVideoTask) ProcessMedia(ctx scanner_task.TaskContext, mediaData *
 			videoThumbnailURL.Height = thumbDimensions.Height
 			videoThumbnailURL.FileSize = fileStats.Size()
 
-			//未修改
-			if err := ctx.GetDB().Save(videoThumbnailURL).Error; err != nil {
-				return []*models.MediaURL{}, errors.Wrap(err, "updating video thumbnail url in database after re-encoding")
-			}
+			//if err := ctx.GetDB().Save(videoThumbnailURL).Error; err != nil {
+			//	return []*models.MediaURL{}, errors.Wrap(err, "updating video thumbnail url in database after re-encoding")
+			//}
+			sql_media_media_urls := fmt.Sprintf("update media_urls set updated_at=NOW(),width=%v,height=%v,file_size=%v where media_urls.id=%v", videoThumbnailURL.Width, videoThumbnailURL.Height, int(videoThumbnailURL.FileSize), videoThumbnailURL.ID)
+			dataApi.ExecuteSQl(sql_media_media_urls)
 		}
 	}
 

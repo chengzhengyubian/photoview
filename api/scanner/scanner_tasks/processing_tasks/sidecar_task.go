@@ -46,11 +46,13 @@ func (t SidecarTask) AfterMediaFound(ctx scanner_task.TaskContext, media *models
 	// Add sidecar data to media
 	media.SideCarPath = sideCarPath
 	media.SideCarHash = sideCarHash
-	//未修改
-	if err := ctx.GetDB().Save(media).Error; err != nil {
-		return errors.Wrapf(err, "update media sidecar info (%s)", *sideCarPath)
-	}
-
+	//修改完
+	//if err := ctx.GetDB().Save(media).Error; err != nil {
+	//	return errors.Wrapf(err, "update media sidecar info (%s)", *sideCarPath)
+	//}
+	sql_media_up := fmt.Sprintf("update media set side_car_path='%v',side_car_hash='%v' where media.id=%v", media.SideCarPath, media.SideCarHash, media.ID)
+	dataApi, _ := dataapi.NewDataApiClient()
+	dataApi.ExecuteSQl(sql_media_up)
 	return nil
 }
 

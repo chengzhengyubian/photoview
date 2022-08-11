@@ -135,6 +135,9 @@ func NewRootAlbum(rootPath string, owner *models.User) (*models.Album, error) {
 		id := DataApi.GetInt(res, 0, 0)
 		sql_user_albums_in := fmt.Sprintf("INSERT INTO `user_albums` (`user_id`,`album_id`) VALUES (%v,%v) ", owner.ID, id)
 		dataApi.ExecuteSQl(sql_user_albums_in)
+		album.ID = id
+		fmt.Println("id", id)
+		album.PathHash = models.MD5Hash(album.Path)
 		return &album, nil
 	}
 }
@@ -257,7 +260,8 @@ func findMediaForAlbum(ctx scanner_task.TaskContext) []*models.Media {
 			//	return nil
 			//})
 			{
-				media, isNewMedia, err := ScanMedia( /*ctx.GetDB(), */ mediaPath, ctx.GetAlbum().ID, ctx.GetCache())
+				id := ctx.GetAlbum().ID
+				media, isNewMedia, err := ScanMedia( /*ctx.GetDB(), */ mediaPath, id, ctx.GetCache())
 				if err != nil {
 					return nil
 				}

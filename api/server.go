@@ -10,7 +10,6 @@ import (
 
 	"github.com/joho/godotenv"
 
-	"github.com/photoview/photoview/api/database"
 	"github.com/photoview/photoview/api/dataloader"
 	"github.com/photoview/photoview/api/graphql/auth"
 	graphql_endpoint "github.com/photoview/photoview/api/graphql/endpoint"
@@ -35,10 +34,10 @@ func main() {
 
 	devMode := utils.DevelopmentMode()
 
-	db, err := database.SetupDatabase()
-	if err != nil {
-		log.Panicf("Could not connect to database: %s\n", err)
-	}
+	//db, err := database.SetupDatabase()
+	//if err != nil {
+	//	log.Panicf("Could not connect to database: %s\n", err)
+	//}
 
 	//// Migrate database
 	//if err := database.MigrateDatabase(db); err != nil {
@@ -56,8 +55,8 @@ func main() {
 	executable_worker.InitializeExecutableWorkers()
 
 	exif.InitializeEXIFParser()
-
-	//if err := face_detection.InitializeFaceDetector(db); err != nil {
+	//
+	//if err := face_detection.InitializeFaceDetector( /*db*/ ); err != nil {
 	//	log.Panicf("Could not initialize face detector: %s\n", err)
 	//}
 
@@ -80,7 +79,7 @@ func main() {
 		})
 	}
 
-	endpointRouter.Handle("/graphql", graphql_endpoint.GraphqlEndpoint(db))
+	endpointRouter.Handle("/graphql", graphql_endpoint.GraphqlEndpoint( /*db*/ ))
 
 	photoRouter := endpointRouter.PathPrefix("/photo").Subrouter()
 	routes.RegisterPhotoRoutes( /*db, */ photoRouter)

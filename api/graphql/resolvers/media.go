@@ -313,7 +313,7 @@ func (r *mediaResolver) Exif(ctx context.Context, media *models.Media) (*models.
 	sql_media_exif_select := fmt.Sprintf("select media_exif.* from media_exif left join media on media.exif_id=media.exif_id and media.id=%v order by media.exif_id limit 1", media.ID)
 	dataApi, _ := DataApi.NewDataApiClient()
 	res, err := dataApi.Query(sql_media_exif_select)
-	if err != nil {
+	if len(res) == 0 {
 		return nil, err
 	}
 	exif.ID = DataApi.GetInt(res, 0, 0)

@@ -1,16 +1,13 @@
 package scanner_task
 
-//未改完
+//修改完
 import (
 	"context"
-	"database/sql"
-	"flag"
 	"io/fs"
 
 	"github.com/photoview/photoview/api/graphql/models"
 	"github.com/photoview/photoview/api/scanner/media_encoding"
 	"github.com/photoview/photoview/api/scanner/scanner_cache"
-	"gorm.io/gorm"
 )
 
 // ScannerTask is an interface for a task to be performed as a part of the scanner pipeline
@@ -66,15 +63,15 @@ func (c TaskContext) GetCache() *scanner_cache.AlbumScannerCache {
 	return c.ctx.Value(taskCtxKeyAlbumCache).(*scanner_cache.AlbumScannerCache)
 }
 
-func (c TaskContext) GetDB() *gorm.DB {
-	return c.ctx.Value(taskCtxKeyDatabase).(*gorm.DB)
-}
+//func (c TaskContext) GetDB() *gorm.DB {
+//	return c.ctx.Value(taskCtxKeyDatabase).(*gorm.DB)
+//}
 
-func (c TaskContext) DatabaseTransaction(transFunc func(ctx TaskContext) error, opts ...*sql.TxOptions) error {
-	return c.GetDB().Transaction(func(tx *gorm.DB) error {
-		return transFunc(c.WithDB(tx))
-	}, opts...)
-}
+//func (c TaskContext) DatabaseTransaction(transFunc func(ctx TaskContext) error, opts ...*sql.TxOptions) error {
+//	return c.GetDB().Transaction(func(tx *gorm.DB) error {
+//		return transFunc(c.WithDB(tx))
+//	}, opts...)
+//}
 
 func (c TaskContext) WithValue(key, val interface{}) TaskContext {
 	return TaskContext{
@@ -86,14 +83,14 @@ func (c TaskContext) Value(key interface{}) interface{} {
 	return c.ctx.Value(key)
 }
 
-func (c TaskContext) WithDB(db *gorm.DB) TaskContext {
-	// Allow db to be nil in tests
-	if db == nil && flag.Lookup("test.v") != nil {
-		return c
-	}
-
-	return c.WithValue(taskCtxKeyDatabase, db.WithContext(c.ctx))
-}
+//func (c TaskContext) WithDB(db *gorm.DB) TaskContext {
+//	// Allow db to be nil in tests
+//	if db == nil && flag.Lookup("test.v") != nil {
+//		return c
+//	}
+//
+//	return c.WithValue(taskCtxKeyDatabase, db.WithContext(c.ctx))
+//}
 
 func (c TaskContext) Done() <-chan struct{} {
 	return c.ctx.Done()

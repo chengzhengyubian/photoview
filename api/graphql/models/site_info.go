@@ -2,9 +2,9 @@ package models
 
 //修改完
 import (
+	"fmt"
 	DataApi "github.com/photoview/photoview/api/dataapi"
 	"github.com/pkg/errors"
-	"strconv"
 )
 
 type SiteInfo struct {
@@ -45,7 +45,7 @@ func GetSiteInfo( /*db *gorm.DB*/ ) (*SiteInfo, error) {
 	sql_site_info_se := "SELECT * FROM `site_info` LIMIT 1"
 	dataAPi, _ := DataApi.NewDataApiClient()
 	res, err := dataAPi.Query(sql_site_info_se)
-	if len(res) == 0 {
+	if res == nil {
 		return nil, errors.Wrap(err, "get site info from database")
 	}
 	num := len(res)
@@ -58,17 +58,18 @@ func GetSiteInfo( /*db *gorm.DB*/ ) (*SiteInfo, error) {
 	}
 	if len(siteInfo) == 0 {
 		newSiteInfo := DefaultSiteInfo( /*db*/ ) //初始化一张表,这里还没改
-		var setup int
-		if newSiteInfo.InitialSetup == true {
-			setup = 1
-		} else {
-			setup = 0
-		}
+		//var setup int
+		//if newSiteInfo.InitialSetup == true {
+		//	setup = 1
+		//} else {
+		//	setup = 0
+		//}
 		//if err := db.Create(&newSiteInfo).Error; err != nil {
 		//	return nil, errors.Wrap(err, "initialize site_info")
 		//}
 		//return &newSiteInfo, nil
-		sql_site_info_in := "INSERT INTO  site_info( initial_setup , periodic_scan_interval,concurrent_workers ) VALUES (" + strconv.Itoa(setup) + "," + strconv.Itoa(newSiteInfo.PeriodicScanInterval) + "," + strconv.Itoa(newSiteInfo.ConcurrentWorkers) + ")"
+		//sql_site_info_in := "INSERT INTO  site_info( initial_setup , periodic_scan_interval,concurrent_workers ) VALUES (" + strconv.Itoa(setup) + "," + strconv.Itoa(newSiteInfo.PeriodicScanInterval) + "," + strconv.Itoa(newSiteInfo.ConcurrentWorkers) + ")"
+		sql_site_info_in := fmt.Sprintf("INSERT INTO  site_info( initial_setup , periodic_scan_interval,concurrent_workers ) VALUES(%v,%v,%v)", 1, newSiteInfo.PeriodicScanInterval, newSiteInfo.ConcurrentWorkers)
 		dataAPi.ExecuteSQl(sql_site_info_in)
 		return &newSiteInfo, nil
 	} else {

@@ -1,20 +1,19 @@
 package models
 
-//未修改
 import (
 	"bytes"
 	"database/sql/driver"
 	"encoding/binary"
 	"fmt"
+	"github.com/photoview/photoview/api/dataapi"
 	"image"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/Kagami/go-face"
-	"github.com/photoview/photoview/api/database/drivers"
 	"github.com/photoview/photoview/api/scanner/media_encoding/media_utils"
-	"gorm.io/gorm"
-	"gorm.io/gorm/schema"
+	//"gorm.io/gorm"
 )
 
 type FaceGroup struct {
@@ -33,31 +32,60 @@ type ImageFace struct {
 	Rectangle   FaceRectangle  `gorm:"not null"`
 }
 
-func (f *ImageFace) FillMedia(db *gorm.DB) error {
+func (f *ImageFace) FillMedia( /*db *gorm.DB*/ ) error {
 	if f.Media.ID != 0 {
 		// media already exists
 		return nil
 	}
 
-	if err := db.Model(&f).Association("Media").Find(&f.Media); err != nil {
-		return err
+	//if err := db.Model(&f).Association("Media").Find(&f.Media); err != nil {
+	//	return err
+	//}
+	sql_media_se := fmt.Sprintf("select * from media left join image_faces on image_faces.media_id=media.id where image_faces.id=%v", f.ID)
+	dataApi, _ := dataapi.NewDataApiClientJosn()
+	res, _ := dataApi.Query(sql_media_se)
+	f.Media.ID = dataapi.GetInt(res, 0, 0)
+	f.Media.CreatedAt = time.Unix(*res[0][1].LongValue/1000, 0)
+	f.Media.UpdatedAt = time.Unix(*res[0][2].LongValue/1000, 0)
+	f.Media.Title = *res[0][3].StringValue
+	f.Media.Path = *res[0][4].StringValue
+	f.Media.PathHash = *res[0][5].StringValue
+	f.Media.AlbumID = int(*res[0][6].LongValue)
+	f.Media.ExifID = dataapi.GetIntP(res, 0, 7)
+	f.Media.DateShot = time.Unix(*res[0][8].LongValue/1000, 0)
+	if *res[0][9].StringValue == "photo" {
+		f.Media.Type = MediaTypePhoto
+	} else {
+		f.Media.Type = MediaTypeVideo
 	}
-
+	f.Media.VideoMetadataID = dataapi.GetIntP(res, 0, 10)
+	f.Media.SideCarPath = dataapi.GetStringP(res, 0, 11)
+	f.Media.SideCarHash = dataapi.GetStringP(res, 0, 12)
+	f.Media.Blurhash = dataapi.GetStringP(res, 0, 13)
+	f.Media.AlbumID = dataapi.GetInt(res, 0, 14)
+	f.Media.Album.ID = dataapi.GetInt(res, 0, 14)
+	f.Media.Album.CreatedAt = time.Unix(*res[0][15].LongValue/1000, 0)
+	f.Media.Album.UpdatedAt = time.Unix(*res[0][16].LongValue/1000, 0)
+	f.Media.Album.Title = dataapi.GetString(res, 0, 17)
+	f.Media.Album.ParentAlbumID = dataapi.GetIntP(res, 0, 18)
+	f.Media.Album.Path = dataapi.GetString(res, 0, 19)
+	f.Media.Album.PathHash = dataapi.GetString(res, 0, 20)
+	f.Media.Album.CoverID = dataapi.GetIntP(res, 0, 21)
 	return nil
 }
 
 type FaceDescriptor face.Descriptor
 
 // GormDataType datatype used in database
-func (FaceDescriptor) GormDBDataType(db *gorm.DB, field *schema.Field) string {
-	switch drivers.GetDatabaseDriverType(db) {
-	case drivers.MYSQL, drivers.SQLITE:
-		return "BLOB"
-	case drivers.POSTGRES:
-		return "BYTEA"
-	}
-	return ""
-}
+//func (FaceDescriptor) GormDBDataType(db *gorm.DB, field *schema.Field) string {
+//	switch drivers.GetDatabaseDriverType(db) {
+//	case drivers.MYSQL, drivers.SQLITE:
+//		return "BLOB"
+//	case drivers.POSTGRES:
+//		return "BYTEA"
+//	}
+//	return ""
+//}
 
 // Scan tells GORM how to convert database data to Go format
 func (fd *FaceDescriptor) Scan(value interface{}) error {

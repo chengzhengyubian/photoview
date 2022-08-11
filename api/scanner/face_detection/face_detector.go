@@ -1,6 +1,5 @@
 package face_detection
 
-//未修改
 import (
 	"log"
 	"sync"
@@ -9,7 +8,6 @@ import (
 	"github.com/photoview/photoview/api/graphql/models"
 	"github.com/photoview/photoview/api/utils"
 	"github.com/pkg/errors"
-	"gorm.io/gorm"
 )
 
 type FaceDetector struct {
@@ -22,7 +20,7 @@ type FaceDetector struct {
 
 var GlobalFaceDetector *FaceDetector = nil
 
-func InitializeFaceDetector(db *gorm.DB) error {
+func InitializeFaceDetector( /*db *gorm.DB*/ ) error {
 	if utils.EnvDisableFaceRecognition.GetBool() {
 		log.Printf("Face detection disabled (%s=1)\n", utils.EnvDisableFaceRecognition.GetName())
 		return nil
@@ -35,7 +33,7 @@ func InitializeFaceDetector(db *gorm.DB) error {
 		return errors.Wrap(err, "initialize facedetect recognizer")
 	}
 
-	faceDescriptors, faceGroupIDs, imageFaceIDs, err := getSamplesFromDatabase(db)
+	faceDescriptors, faceGroupIDs, imageFaceIDs, err := getSamplesFromDatabase( /*db*/ )
 	if err != nil {
 		return errors.Wrap(err, "get face detection samples from database")
 	}
@@ -50,15 +48,14 @@ func InitializeFaceDetector(db *gorm.DB) error {
 	return nil
 }
 
-//未修改
-func getSamplesFromDatabase(db *gorm.DB) (samples []face.Descriptor, faceGroupIDs []int32, imageFaceIDs []int, err error) {
+func getSamplesFromDatabase( /*db *gorm.DB*/ ) (samples []face.Descriptor, faceGroupIDs []int32, imageFaceIDs []int, err error) {
 
 	var imageFaces []*models.ImageFace
 
-	if err = db.Find(&imageFaces).Error; err != nil { //SELECT * FROM `image_faces`
-		return
-	}
-
+	//if err = db.Find(&imageFaces).Error; err != nil { //SELECT * FROM `image_faces`
+	//	return
+	//}
+	imageFaces = nil
 	samples = make([]face.Descriptor, len(imageFaces))
 	faceGroupIDs = make([]int32, len(imageFaces))
 	imageFaceIDs = make([]int, len(imageFaces))
@@ -73,8 +70,8 @@ func getSamplesFromDatabase(db *gorm.DB) (samples []face.Descriptor, faceGroupID
 }
 
 // ReloadFacesFromDatabase replaces the in-memory face descriptors with the ones in the database
-func (fd *FaceDetector) ReloadFacesFromDatabase(db *gorm.DB) error {
-	faceDescriptors, faceGroupIDs, imageFaceIDs, err := getSamplesFromDatabase(db)
+func (fd *FaceDetector) ReloadFacesFromDatabase( /*db *gorm.DB*/ ) error {
+	faceDescriptors, faceGroupIDs, imageFaceIDs, err := getSamplesFromDatabase( /*db*/ )
 	if err != nil {
 		return err
 	}
@@ -90,11 +87,11 @@ func (fd *FaceDetector) ReloadFacesFromDatabase(db *gorm.DB) error {
 }
 
 // DetectFaces finds the faces in the given image and saves them to the database
-func (fd *FaceDetector) DetectFaces(db *gorm.DB, media *models.Media) error {
-	if err := db.Model(media).Preload("MediaURL").First(&media).Error; err != nil { //SELECT * FROM `media` WHERE `media`.`id` = 97 ORDER BY `media`.`id` LIMIT 1
+func (fd *FaceDetector) DetectFaces( /*db *gorm.DB,*/ media *models.Media) error {
+	/*if err := db.Model(media).Preload("MediaURL").First(&media).Error; err != nil { //SELECT * FROM `media` WHERE `media`.`id` = 97 ORDER BY `media`.`id` LIMIT 1
 		return err
 	}
-
+	*/
 	var thumbnailURL *models.MediaURL
 	for _, url := range media.MediaURL {
 		if url.Purpose == models.PhotoThumbnail {
@@ -122,7 +119,7 @@ func (fd *FaceDetector) DetectFaces(db *gorm.DB, media *models.Media) error {
 	}
 
 	for _, face := range faces {
-		fd.classifyFace(db, &face, media, thumbnailPath)
+		fd.classifyFace( /*db, */ &face, media, thumbnailPath)
 	}
 
 	return nil
@@ -132,7 +129,7 @@ func (fd *FaceDetector) classifyDescriptor(descriptor face.Descriptor) int32 {
 	return int32(fd.rec.ClassifyThreshold(descriptor, 0.2))
 }
 
-func (fd *FaceDetector) classifyFace(db *gorm.DB, face *face.Face, media *models.Media, imagePath string) error {
+func (fd *FaceDetector) classifyFace( /*db *gorm.DB,*/ face *face.Face, media *models.Media, imagePath string) error {
 	fd.mutex.Lock()
 	defer fd.mutex.Unlock()
 
@@ -159,20 +156,20 @@ func (fd *FaceDetector) classifyFace(db *gorm.DB, face *face.Face, media *models
 			ImageFaces: []models.ImageFace{imageFace},
 		}
 
-		if err := db.Create(&faceGroup).Error; err != nil {
-			return err
-		}
+		//if err := db.Create(&faceGroup).Error; err != nil {
+		//	return err
+		//}
 
 	} else {
 		log.Println("Found match")
 
-		if err := db.First(&faceGroup, int(match)).Error; err != nil {
-			return err
-		}
-
-		if err := db.Model(&faceGroup).Association("ImageFaces").Append(&imageFace); err != nil {
-			return err
-		}
+		//if err := db.First(&faceGroup, int(match)).Error; err != nil {
+		//	return err
+		//}
+		//
+		//if err := db.Model(&faceGroup).Association("ImageFaces").Append(&imageFace); err != nil {
+		//	return err
+		//}
 	}
 
 	fd.faceDescriptors = append(fd.faceDescriptors, face.Descriptor)
@@ -210,7 +207,7 @@ func (fd *FaceDetector) MergeImageFaces(imageFaceIDs []int, destFaceGroupID int3
 	}
 }
 
-func (fd *FaceDetector) RecognizeUnlabeledFaces(tx *gorm.DB, user *models.User) ([]*models.ImageFace, error) {
+func (fd *FaceDetector) RecognizeUnlabeledFaces( /*tx *gorm.DB*/ user *models.User) ([]*models.ImageFace, error) {
 	unrecognizedDescriptors := make([]face.Descriptor, 0)
 	unrecognizedFaceGroupIDs := make([]int32, 0)
 	unrecognizedImageFaceIDs := make([]int, 0)
@@ -221,18 +218,18 @@ func (fd *FaceDetector) RecognizeUnlabeledFaces(tx *gorm.DB, user *models.User) 
 
 	var unlabeledFaceGroups []*models.FaceGroup
 
-	err := tx.
-		Joins("JOIN image_faces ON image_faces.face_group_id = face_groups.id").
-		Joins("JOIN media ON image_faces.media_id = media.id").
-		Where("face_groups.label IS NULL").
-		Where("media.album_id IN (?)",
-			tx.Select("album_id").Table("user_albums").Where("user_id = ?", user.ID),
-		).
-		Find(&unlabeledFaceGroups).Error // SELECT `face_groups`.`id`,`face_groups`.`created_at`,`face_groups`.`updated_at`,`face_groups`.`label` FROM `face_groups` JOIN image_faces ON image_faces.face_group_id = face_groups.id JOIN media ON image_faces.media_id = media.id WHERE face_groups.label IS NULL AND media.album_id IN (SELECT album_id FROM `user_albums` WHERE user_id = 2)
+	//err := tx.
+	//	Joins("JOIN image_faces ON image_faces.face_group_id = face_groups.id").
+	//	Joins("JOIN media ON image_faces.media_id = media.id").
+	//	Where("face_groups.label IS NULL").
+	//	Where("media.album_id IN (?)",
+	//		tx.Select("album_id").Table("user_albums").Where("user_id = ?", user.ID),
+	//	).
+	//	Find(&unlabeledFaceGroups).Error // SELECT `face_groups`.`id`,`face_groups`.`created_at`,`face_groups`.`updated_at`,`face_groups`.`label` FROM `face_groups` JOIN image_faces ON image_faces.face_group_id = face_groups.id JOIN media ON image_faces.media_id = media.id WHERE face_groups.label IS NULL AND media.album_id IN (SELECT album_id FROM `user_albums` WHERE user_id = 2)
 
-	if err != nil {
-		return nil, err
-	}
+	//if err != nil {
+	//	return nil, err
+	//}
 
 	fd.mutex.Lock()
 	defer fd.mutex.Unlock()
@@ -282,13 +279,13 @@ func (fd *FaceDetector) RecognizeUnlabeledFaces(tx *gorm.DB, user *models.User) 
 		} else {
 			// found new match, update the database
 			var imageFace models.ImageFace
-			if err := tx.Model(&models.ImageFace{}).First(imageFace, imageFaceID).Error; err != nil {
-				return nil, err
-			}
-
-			if err := tx.Model(&imageFace).Update("face_group_id", int(faceGroupID)).Error; err != nil {
-				return nil, err
-			}
+			//if err := tx.Model(&models.ImageFace{}).First(imageFace, imageFaceID).Error; err != nil {
+			//	return nil, err
+			//}
+			//
+			//if err := tx.Model(&imageFace).Update("face_group_id", int(faceGroupID)).Error; err != nil {
+			//	return nil, err
+			//}
 
 			updatedImageFaces = append(updatedImageFaces, &imageFace)
 

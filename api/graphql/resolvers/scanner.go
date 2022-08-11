@@ -8,7 +8,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/photoview/photoview/api/database/drivers"
 	"github.com/photoview/photoview/api/graphql/models"
 	"github.com/photoview/photoview/api/scanner/periodic_scanner"
 	"github.com/photoview/photoview/api/scanner/scanner_queue"
@@ -98,9 +97,9 @@ func (r *mutationResolver) SetScannerConcurrentWorkers(ctx context.Context, work
 	//}
 
 	//注意一下
-	if workers > 1 && drivers.DatabaseDriverFromEnv() == drivers.SQLITE {
-		return 0, errors.New("multiple workers not supported for SQLite databases")
-	}
+	//if workers > 1 && drivers.DatabaseDriverFromEnv() == drivers.SQLITE {
+	//	return 0, errors.New("multiple workers not supported for SQLite databases")
+	//}
 	//if err := db.Session(&gorm.Session{AllowGlobalUpdate: true}).Model(&models.SiteInfo{}).Update("concurrent_workers", workers).Error; err != nil {
 	//	return 0, err
 	//}
