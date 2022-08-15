@@ -46,6 +46,16 @@ services:
       # You can mount multiple paths, if your photos are spread across multiple directories.
       - ./photos_path:/photos:ro
 
+  # container to build for run on server
+  tool:
+    build:
+      dockerfile: Dockerfile-build
+      context: ./
+    working_dir: /app
+    volumes:
+      - ./api/build:/app/build
+    command: "tail -f /dev/null"
+
 volumes:
   db_data:
   api_cache:

@@ -95,6 +95,15 @@ $ docker-compose up -d
 
 If the endpoint or the port hasn't been changed in the `docker-compose.yml` file, Photoview can now be accessed at http://localhost:8000
 
+### build api for linux platform
+
+```bash
+docker-compose exec tool bash
+go build -v -o build/photo_view_latest
+```
+
+then you can see photo_view_latest in api/build directory, and can upload it to server to start it
+
 ### Initial Setup
 
 If everything is setup correctly, you should be presented with an initial setup wizard, when accessing the website the first time.

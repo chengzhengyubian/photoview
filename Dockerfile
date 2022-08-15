@@ -44,6 +44,7 @@ ENV GOPATH="/go"
 ENV PATH="${GOPATH}/bin:${PATH}"
 
 ENV CGO_ENABLED 1
+ENV TARGETPLATFORM linux/amd64
 
 RUN go env
 
@@ -51,7 +52,7 @@ RUN mkdir -p /app
 WORKDIR /app
 
 # Download dependencies
-COPY api/go.mod api/go.sum /app/
+COPY api /app
 RUN go mod download
 
 # Patch go-face
@@ -63,7 +64,6 @@ RUN go install \
   github.com/Kagami/go-face
 
 # Copy and build api source
-COPY api /app
 RUN go build -v -o photoview .
 
 ### Copy api and ui to production environment ###
