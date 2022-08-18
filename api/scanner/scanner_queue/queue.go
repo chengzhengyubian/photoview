@@ -59,6 +59,9 @@ func InitializeScannerQueue( /*db *gorm.DB*/ ) error {
 	var concurrentWorkers int
 	{
 		site_info, err := models.GetSiteInfo( /*db*/ )
+		if site_info == nil {
+			return err
+		}
 		if err != nil {
 			return errors.Wrap(err, "get current workers from database")
 		}

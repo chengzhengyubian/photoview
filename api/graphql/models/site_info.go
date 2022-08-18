@@ -44,16 +44,19 @@ func GetSiteInfo( /*db *gorm.DB*/ ) (*SiteInfo, error) {
 
 	sql_site_info_se := "SELECT * FROM `site_info` LIMIT 1"
 	dataAPi, _ := DataApi.NewDataApiClient()
-	res, err := dataAPi.Query(sql_site_info_se)
+	res, err := dataAPi.ExecuteSQl(sql_site_info_se)
+	if *res.Body.Code != "200" {
+		return nil, errors.New("wrong arn")
+	}
 	if res == nil {
 		return nil, errors.Wrap(err, "get site info from database")
 	}
-	num := len(res)
+	num := len(res.Body.Data.Records)
 	for i := 0; i < num; i++ {
 		var siteinfo SiteInfo
-		siteinfo.InitialSetup = *res[i][0].BooleanValue
-		siteinfo.PeriodicScanInterval = int(*res[i][1].LongValue)
-		siteinfo.ConcurrentWorkers = int(*res[i][2].LongValue)
+		siteinfo.InitialSetup = *res.Body.Data.Records[i][0].BooleanValue
+		siteinfo.PeriodicScanInterval = int(*res.Body.Data.Records[i][1].LongValue)
+		siteinfo.ConcurrentWorkers = int(*res.Body.Data.Records[i][2].LongValue)
 		siteInfo = append(siteInfo, &siteinfo)
 	}
 	if len(siteInfo) == 0 {

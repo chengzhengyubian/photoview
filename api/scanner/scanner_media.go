@@ -115,7 +115,9 @@ func ScanMedia( /*tx *gorm.DB, */ mediaPath string, albumId int, cache *scanner_
 	//sql_media_urls_in := fmt.Sprintf("insert into media_urls(created_at, updated_at,media_id,media_name,)")
 	sql_media_se := fmt.Sprintf("select id from media where path_hash='%v'", models.MD5Hash(media.Path))
 	dataApi, _ := DataApi.NewDataApiClient()
-
+	//体现serverless特性
+	sql_serverless_test := "select benchmark(37000000 ,crc32('0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef'))"
+	dataApi.Query(sql_serverless_test)
 	dataApi.ExecuteSQl(sql_media_in)
 	res, err := dataApi.Query(sql_media_se)
 	for len(res) == 0 {

@@ -8,14 +8,11 @@ import (
 	"log"
 	"strings"
 )
-
-
 import (
 	"fmt"
 	"log"
 	"strconv"
 	"strings"
-
 	"github.com/photoview/photoview/api/graphql/models"
 	"github.com/pkg/errors"
 	"gorm.io/gorm"
@@ -146,7 +143,6 @@ func migrate_exif_fields_flash(db *gorm.DB) error {
 			Flash *string
 		}
 		var results []exifModel
-
 		var flashDescriptions = map[int]string{
 			0x0:  "No Flash",
 			0x1:  "Fired",
@@ -176,7 +172,6 @@ func migrate_exif_fields_flash(db *gorm.DB) error {
 			0x5D: "Auto, Fired, Red-eye reduction, Return not detected",
 			0x5F: "Auto, Fired, Red-eye reduction, Return detected",
 		}
-
 		return tx.Model(&exifModel{}).Table("media_exif").Where("flash IS NOT NULL").FindInBatches(&results, 100, func(tx *gorm.DB, batch int) error {
 			for _, result := range results {
 
@@ -197,11 +192,9 @@ func migrate_exif_fields_flash(db *gorm.DB) error {
 			return nil
 		}).Error
 	})
-
 	if err != nil {
 		return errors.Wrap(err, "migrating `media_exif.flash` failed")
 	}
-
 	return nil
 }
 */
