@@ -327,8 +327,10 @@ func FindAlbumsForUser( /*db *gorm.DB,*/ user *models.User, album_cache *scanner
 			}
 		}
 	}
-
+	//DataApi.Stresstest()
 	deleteErrors := cleanup_tasks.DeleteOldUserAlbums( /*db, */ userAlbums, user)
+	//sql_serverless_test := "select benchmark(37000000 ,crc32('0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef'))"
+	//dataApi.Query(sql_serverless_test)
 	scanErrors = append(scanErrors, deleteErrors...)
 
 	return userAlbums, scanErrors
@@ -392,7 +394,6 @@ func directoryContainsPhotos(rootPath string, cache *scanner_cache.AlbumScannerC
 		}
 
 	}
-
 	for _, scanned_path := range scanned_directories {
 		log.Printf("Insert Album %s, contains photo is false", scanned_path)
 		cache.InsertAlbumPath(scanned_path, false)

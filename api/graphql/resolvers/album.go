@@ -58,7 +58,6 @@ func (r *queryResolver) Album(ctx context.Context, id int, tokenCredentials *mod
 
 	return actions.Album(user, id)
 }
-
 func (r *Resolver) Album() api.AlbumResolver {
 	return &albumResolver{r}
 }

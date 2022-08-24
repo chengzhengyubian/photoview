@@ -7,6 +7,7 @@ import (
 	"rds-data-20220330/client"
 	"reflect"
 	"strings"
+	"sync"
 )
 
 func FormatSql(template string, args ...any) string {
@@ -21,7 +22,6 @@ func GetString(records [][]*client.ExecuteStatementResponseBodyDataRecords, row 
 	}
 	return *records[row][colum].StringValue
 }
-
 func GetStringP(records [][]*client.ExecuteStatementResponseBodyDataRecords, row int, colum int) *string {
 	if recordsDataIsNull(records, row, colum) {
 		return nil
@@ -34,7 +34,6 @@ func GetInt(records [][]*client.ExecuteStatementResponseBodyDataRecords, row int
 	}
 	return int(*records[row][colum].LongValue)
 }
-
 func GetIntP(records [][]*client.ExecuteStatementResponseBodyDataRecords, row int, colum int) *int {
 	var n *int
 	if recordsDataIsNull(records, row, colum) {
@@ -44,7 +43,6 @@ func GetIntP(records [][]*client.ExecuteStatementResponseBodyDataRecords, row in
 	n = &m
 	return n
 }
-
 func GetLong(records [][]*client.ExecuteStatementResponseBodyDataRecords, row int, colum int) int64 {
 	if recordsDataIsNull(records, row, colum) {
 		return 0
@@ -61,14 +59,12 @@ func GetLongP(records [][]*client.ExecuteStatementResponseBodyDataRecords, row i
 	n = &m
 	return n
 }
-
 func GetBoolean(records [][]*client.ExecuteStatementResponseBodyDataRecords, row int, colum int) bool {
 	if recordsDataIsNull(records, row, colum) {
 		return false
 	}
 	return *records[row][colum].BooleanValue
 }
-
 func recordsDataIsNull(records [][]*client.ExecuteStatementResponseBodyDataRecords, row int, colum int) bool {
 	if records[row][colum].IsNull == nil {
 		return false
@@ -107,7 +103,6 @@ func FormatUpdateSql(table string, data map[string]any, query map[string]any) (s
 
 	return sql, nil
 }
-
 func formatSqlElem(key string, value any) (string, error) {
 	switch value.(type) {
 	case string:
@@ -120,7 +115,6 @@ func formatSqlElem(key string, value any) (string, error) {
 		return "", errors.New(fmt.Sprintf("datatype %s not supported yet!", reflect.TypeOf(value)))
 	}
 }
-
 func MigrateDatabase() {
 	sql_site_info_insert := "CREATE TABLE if not exists `site_info` (\n`initial_setup` tinyint(1) NOT NULL,\n`periodic_scan_interval` bigint(20) NOT NULL,\n`concurrent_workers` bigint(20) NOT NULL\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci"
 	sql_users_insert := "CREATE TABLE if not exists `users` (\n`id` bigint(20) NOT NULL AUTO_INCREMENT,\n`created_at` datetime(3) DEFAULT NULL,\n`updated_at` datetime(3) DEFAULT NULL,\n`username` varchar(128) DEFAULT NULL,\n`password` varchar(256) DEFAULT NULL,\n`admin` tinyint(1) DEFAULT '0',\nPRIMARY KEY (`id`),\nUNIQUE KEY `username` (`username`)\n) ENGINE=InnoDB AUTO_INCREMENT=28 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci"
@@ -169,5 +163,25 @@ func MigrateDatabase() {
 	for i := 0; i < 14; i++ {
 		dataApi.ExecuteSQl(sql[i])
 	}
-
+}
+func Stresstest() {
+	wg := sync.WaitGroup{}
+	wg.Add(4)
+	for i := 0; i < 4; i++ {
+		go func() {
+			defer wg.Done()
+			dataApi, _ := NewDataApiClient()
+			sql_serverless_test := "select benchmark(37000000 ,crc32('0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef'))"
+			res, _ := dataApi.Query(sql_serverless_test)
+			println(res)
+		}()
+	}
+	//for i := 0; i < 2; i++ {
+	//	go func() {
+	//		defer wg.Done()
+	//		sql_serverless_test := "select benchmark(30000000 ,crc32('0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef'))"
+	//		dataApi.Query(sql_serverless_test)
+	//	}()
+	//}
+	wg.Wait()
 }

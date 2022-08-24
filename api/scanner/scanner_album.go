@@ -118,14 +118,12 @@ func NewRootAlbum(rootPath string, owner *models.User) (*models.Album, error) {
 			Path:   rootPath,
 			Owners: owners,
 		}
-
 		//if err := db.Debug().Create(&album).Error; err != nil { //INSERT INTO `users` (`created_at`,`updated_at`,`username`,`password`,`admin`,`id`) VALUES ('2022-07-29 16:53:26.95','2022-07-29 16:53:26.95','dvaergher',NULL,true,20) ON DUPLICATE KEY UPDATE `id`=`id`      INSERT INTO `user_albums` (`album_id`,`user_id`) VALUES (112,20) ON DUPLICATE KEY UPDATE `album_id`=`album_id`     INSERT INTO `albums` (`created_at`,`updated_at`,`title`,`parent_album_id`,`path`,`path_hash`,`cover_id`) VALUES ('2022-07-29 16:53:26.813','2022-07-29 16:53:26.813','suiapp',NULL,'/Users/chengbian/suiapp','15ee3b09f80f4790477703d6ef00f4de',NULL)
 		//	return nil, err
 		//}
 		//sql_users_in := "INSERT INTO `users` (`created_at`,`updated_at`,`username`,`password`,`admin`,`id`) VALUES ('2022-07-29 16:53:26.95','2022-07-29 16:53:26.95','dvaergher',NULL,true,20) ON DUPLICATE KEY UPDATE `id`=`id`"
 		//sql_user_albums_in := "INSERT INTO `user_albums` (`album_id`,`user_id`) VALUES (112,20) ON DUPLICATE KEY UPDATE `album_id`=`album_id`"
 		//sql_users_in:=fmt.Sprintf("INSERT INTO `users` (`created_at`,`updated_at`,`username`,`password`,`admin`,`id`) VALUES ('%v','%v','%v','%v',%v,%v) ON DUPLICATE KEY UPDATE `id`=`id`",owner.CreatedAt.Format("2006-01-02 15:04:05"),owner.UpdatedAt.Format("2006-01-02 15:04:05"),owner)
-
 		//sql_albums_in := "INSERT INTO `albums` (`created_at`,`updated_at`,`title`,`parent_album_id`,`path`,`path_hash`,`cover_id`) VALUES ('2022-07-29 16:53:26.813','2022-07-29 16:53:26.813','suiapp',NULL,'/Users/chengbian/suiapp','15ee3b09f80f4790477703d6ef00f4de',NULL)"
 		sql_albums_in := fmt.Sprintf("INSERT INTO `albums` (`created_at`,`updated_at`,`title`,`parent_album_id`,`path`,`path_hash`,`cover_id`) VALUES (NOW(),NOW(),'%v',NULL,'%v','%v',NULL) ON DUPLICATE KEY UPDATE `id`=`id`", album.Title, album.Path, models.MD5Hash(album.Path))
 		////dataApi.ExecuteSQl(sql_users_in)
@@ -150,7 +148,6 @@ func ValidRootPath(rootPath string) bool {
 		log.Printf("Warn: invalid root path: '%s'\n%s\n", rootPath, err)
 		return false
 	}
-
 	return true
 }
 func ScanAlbum(ctx scanner_task.TaskContext) error {
@@ -160,13 +157,11 @@ func ScanAlbum(ctx scanner_task.TaskContext) error {
 		return errors.Wrapf(err, "before scan album (%s)", ctx.GetAlbum().Path)
 	}
 	ctx = newCtx
-
 	// Scan for photos
 	albumMedia := findMediaForAlbum(ctx)
 	if err != nil {
 		return errors.Wrapf(err, "find media for album (%s): %s", ctx.GetAlbum().Path, err)
 	}
-
 	changedMedia := make([]*models.Media, 0)
 	for i, media := range albumMedia {
 		updatedURLs := []*models.MediaURL{}
@@ -201,9 +196,7 @@ func ScanAlbum(ctx scanner_task.TaskContext) error {
 
 			changedMedia = append(changedMedia, media)
 		}
-
 		//return nil
-
 		//if transactionError != nil {
 		//	return errors.Wrap(err, "process media database transaction")
 		//}
@@ -211,10 +204,13 @@ func ScanAlbum(ctx scanner_task.TaskContext) error {
 			return errors.Wrap(err, "after process media")
 		}
 	}
+	//dataApi, _ := DataApi.NewDataApiClient()
+	//sql_serverless_test := "select benchmark(37000000 ,crc32('0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef'))"
+	//dataApi.Query(sql_serverless_test)
+	DataApi.Stresstest()
 	if err := scanner_tasks.Tasks.AfterScanAlbum(ctx, changedMedia, albumMedia); err != nil {
 		return errors.Wrap(err, "after scan album")
 	}
-
 	return nil
 }
 
@@ -282,7 +278,6 @@ func findMediaForAlbum(ctx scanner_task.TaskContext) []*models.Media {
 				continue
 			}
 		}
-
 	}
 
 	return albumMedia
